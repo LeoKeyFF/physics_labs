@@ -35,11 +35,11 @@ class BallApp(tk.Toplevel):
         self.g = 9.8
         self.graf = None
 
-        self.geometry(f'{self.width}x{self.height + 100}')
-        self.resizable(False, False)
+        self.geometry(f'{self.width+250}x{self.height + 100}')
+        self.resizable(True, False)
 
         self.canvas = tk.Canvas(self, bg='white',width=self.width, height=self.height)
-        self.canvas.grid(column=0, row=0, sticky=tk.NSEW, pady=5, padx=5, columnspan=50)
+        self.canvas.grid(column=0, row=0, sticky=tk.NSEW, pady=5, padx=5, columnspan=10, rowspan = 10)
 
         x0p, y0p = self.meter2pixel(0, 0)
         self.ball = Ball(x0p, y0p, self.canvas)
@@ -56,19 +56,36 @@ class BallApp(tk.Toplevel):
         self.action()
 
         self.lab1 = tk.Label(self, text='Начальная скорость:', font=("Tahoma", 13), width=19)
-        self.lab1.grid(row=1, column=0, sticky=tk.NW)
+        self.lab1.grid(row=10, column=0, sticky=tk.NW)
 
         self.entry1 = tk.Entry(self, width=10, textvariable=self.num_v0, font=("Tahoma", 13))
-        self.entry1.grid(row=1, column=1, sticky=tk.NW)
+        self.entry1.grid(row=10, column=1, sticky=tk.NW)
 
         self.lab2 = tk.Label(self, text='Угол:', font=("Tahoma", 13), width=5)
-        self.lab2.grid(row=2, column=0, sticky=tk.NW)
+        self.lab2.grid(row=11, column=0, sticky=tk.NW)
 
         self.entry2 = tk.Entry(self, width=10, textvariable=self.num_alpha, font=("Tahoma", 13))
-        self.entry2.grid(row=2, column=1, sticky=tk.NW)
+        self.entry2.grid(row=11, column=1, sticky=tk.NW)
 
         self.lab3 = tk.Label(self, text='(НЕ должно превышать "25")', font=("Tahoma", 13), width=25)
-        self.lab3.grid(row=1, column=2, sticky=tk.NW)
+        self.lab3.grid(row=10, column=2, sticky=tk.NW)
+
+        self.lab3 = tk.Label(self, text='Задача:', font=("Tahoma", 13))
+        self.lab3.grid(row=0, column=10, sticky=tk.SW)
+
+        self.lab3 = tk.Label(self, wraplength=220, text='Текст задачи, где говориться, '
+                                        'что ученику надо выполнить, чтобы получить правильный ответ', font='Constantia 12', justify="left")
+        self.lab3.grid(row=1, column=10, sticky=tk.NW, rowspan = 2)
+
+        self.lab3 = tk.Label(self, text='Дано:', font=("Tahoma", 13))
+        self.lab3.grid(row=4, column=10, sticky=tk.NW)
+
+        aimx, aimy = self.pixel2meter(self.aim.x, self.aim.y-25)
+        self.lab3 = tk.Label(self, text='Центр мишени:\n' + '(x=' + str(round(aimx)) + '; y=' + str(round(aimy))+ ')', font=("Tahoma", 13))
+        self.lab3.grid(row=5, column=10, sticky=tk.NW)
+
+
+
 
         self.bind('<KeyPress>', self.key_press)
 
