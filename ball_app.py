@@ -1,4 +1,3 @@
-import math
 import random
 import tkinter as tk
 
@@ -6,7 +5,7 @@ from PIL import ImageTk, Image
 
 from aim import Aim
 from ball import Ball
-
+from ballistics import Ballistics
 
 class BallApp(tk.Toplevel):
     def __init__(self):
@@ -36,7 +35,6 @@ class BallApp(tk.Toplevel):
         self.graph_list = []
 
         self.v_list = []
-        self.g = 9.8
         self.graph = None
 
         #grafic show/hide button
@@ -100,16 +98,10 @@ class BallApp(tk.Toplevel):
         self.bind('<Motion>', self.mouse_move)
         self.bind('<ButtonRelease-1>', self.mouse_release)
 
-    def calc_cords(self, t, V0, alpha):
-        g = 9.8
-        x = V0 * (math.cos(math.pi * alpha / 180)) * t
-        y = V0 * (math.sin(math.pi * alpha / 180)) * t - ((g * t * t) / 2)
-        return x,y
-
     def action(self):
         if self.start:
 
-            ballx, bally = self.calc_cords(self.t, self.ball.V0, self.ball.alpha)
+            ballx, bally = Ballistics.calc_cords(self.t, self.ball.V0, self.ball.alpha)
             if bally < 0:
                 bally = 0
                 self.FALSE_im = ImageTk.PhotoImage(Image.open('images/FALSE.png'))
@@ -134,7 +126,7 @@ class BallApp(tk.Toplevel):
 
             self.ball.move(xp, yp)
 
-            V = self.ball.V0*math.sin(math.pi * self.ball.alpha / 180) - self.t*self.g
+            V = Ballistics.calc_velocity(v0=self.ball.V0, t=self.t, alpha=self.ball.alpha)
             self.v_list.append((800 + self.t*30, 200 - (V*5)))
 
             if self.graph:
@@ -201,8 +193,8 @@ class BallApp(tk.Toplevel):
         self.graph_list.append(g10)
 
     def draw_cords_axes(self):
-        OX = self.canvas.create_line(0, self.y0, self.width, self.y0, width=4)
-        OX = self.canvas.create_line(self.x0, 0, self.x0, self.height, width=4)
+        self.canvas.create_line(0, self.y0, self.width, self.y0, width=4)
+        self.canvas.create_line(self.x0, 0, self.x0, self.height, width=4)
 
         width_m = int(self.width / self.meter)
         height_m = int(self.height / self.meter)
@@ -250,14 +242,10 @@ class BallApp(tk.Toplevel):
     def set_aim_cords(self):
         x1 = random.randint(20, 70)
         y1 = random.randint(5, 30)
-        y_max = self.calc_max_aim_y(x1)
+        y_max = Ballistics.calc_max_aim_y(x1, self.ball.Vmax)
         if y1 > y_max:
             return self.set_aim_cords()
         return self.meter2pixel(int(x1/5)*5, (int(y1/5)*5))
-
-    def calc_max_aim_y(self, x):
-        y = ((self.ball.Vmax * self.ball.Vmax) / (2 * self.g)) - ((self.g * x * x) / (2 * self.ball.Vmax * self.ball.Vmax))
-        return y
 
     def mouse_move(self, event):
         if self.find_collision(event.x, event.y, *self.but_rec):
