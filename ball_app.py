@@ -1,4 +1,3 @@
-import math
 import random
 import tkinter as tk
 
@@ -6,7 +5,7 @@ from PIL import ImageTk, Image
 
 from aim import Aim
 from ball import Ball
-
+from ballistics import Ballistics
 
 class BallApp(tk.Toplevel):
     def __init__(self):
@@ -36,13 +35,13 @@ class BallApp(tk.Toplevel):
         self.graph_list = []
 
         self.v_list = []
-        self.g = 9.8
         self.graph = None
 
         #grafic show/hide button
+        self.button_graf = None
         self.click = False
         self.in_but = False
-        self.but_rec = [100, 500, 140, 540]
+        self.but_rec = [960, 50, 1000, 90]
         self.in_but = False
         self.show_graf = False
 
@@ -88,11 +87,11 @@ class BallApp(tk.Toplevel):
         self.lab3.grid(row=1, column=10, sticky=tk.NW, rowspan = 2)
 
         self.lab3 = tk.Label(self, text='Дано:', font=("Tahoma", 13))
-        self.lab3.grid(row=4, column=10, sticky=tk.NW)
+        self.lab3.grid(row=3, column=10, sticky=tk.SW)
 
-        aimx, aimy = self.pixel2meter(self.aim.x, self.aim.y-25)
+        aimx, aimy = self.pixel2meter(self.aim.x, self.aim.y)
         self.lab3 = tk.Label(self, text='Центр мишени:\n' + '(x=' + str(round(aimx)) + '; y=' + str(round(aimy))+ ')', font=("Tahoma", 13))
-        self.lab3.grid(row=5, column=10, sticky=tk.NW)
+        self.lab3.grid(row=4, column=10, sticky=tk.NW)
 
         self.bind('<KeyPress>', self.key_press)
         self.bind('<Button-1>', self.mouse_click)
@@ -102,7 +101,7 @@ class BallApp(tk.Toplevel):
     def action(self):
         if self.start:
 
-            ballx, bally = self.ball.calc_cords(self.t)
+            ballx, bally = Ballistics.calc_cords(self.t, self.ball.V0, self.ball.alpha)
             if bally < 0:
                 bally = 0
                 self.FALSE_im = ImageTk.PhotoImage(Image.open('images/FALSE.png'))
@@ -111,7 +110,7 @@ class BallApp(tk.Toplevel):
             self.t += 0.03
             xp, yp = self.meter2pixel(ballx, bally)
 
-            if self.collision(xp, yp - self.ball.size, self.ball.size, self.ball.size, self.aim.x, self.aim.y-50, 20, 50):
+            if self.collision(xp, yp - self.ball.size, self.ball.size, self.ball.size, self.aim.x, self.aim.y-self.aim.height/2, self.aim.width, self.aim.height):
                 self.OK_im = ImageTk.PhotoImage(Image.open('images/OK.png'))
                 self.OK = self.canvas.create_image(self.width/2, self.height/2, image=self.OK_im)
                 self.start = False
@@ -127,7 +126,7 @@ class BallApp(tk.Toplevel):
 
             self.ball.move(xp, yp)
 
-            V = self.ball.V0*math.sin(math.pi * self.ball.alpha / 180) - self.t*self.g
+            V = Ballistics.calc_velocity(v0=self.ball.V0, t=self.t, alpha=self.ball.alpha)
             self.v_list.append((800 + self.t*30, 200 - (V*5)))
 
             if self.graph:
@@ -163,7 +162,7 @@ class BallApp(tk.Toplevel):
         self.canvas.create_text(self.x0 - 40, 30, text='y(м)', font='Constantia 20')
         self.canvas.create_text(self.width - 30, self.y0 + 40, text='x(м)', font='Constantia 20')
 
-        self.canvas.create_rectangle(self.but_rec)
+        self.button_graf = self.canvas.create_rectangle(self.but_rec)
 
 
     def draw_graph(self):
@@ -194,8 +193,8 @@ class BallApp(tk.Toplevel):
         self.graph_list.append(g10)
 
     def draw_cords_axes(self):
-        OX = self.canvas.create_line(0, self.y0, self.width, self.y0, width=4)
-        OX = self.canvas.create_line(self.x0, 0, self.x0, self.height, width=4)
+        self.canvas.create_line(0, self.y0, self.width, self.y0, width=4)
+        self.canvas.create_line(self.x0, 0, self.x0, self.height, width=4)
 
         width_m = int(self.width / self.meter)
         height_m = int(self.height / self.meter)
@@ -242,18 +241,14 @@ class BallApp(tk.Toplevel):
 
     def set_aim_cords(self):
         x1 = random.randint(20, 70)
-        y1 = random.randint(0, 30)
-        y_max = self.calc_max_aim_y(x1)
+        y1 = random.randint(5, 30)
+        y_max = Ballistics.calc_max_aim_y(x1, self.ball.Vmax)
         if y1 > y_max:
             return self.set_aim_cords()
-        return self.meter2pixel(x1, y1)
-
-    def calc_max_aim_y(self, x):
-        y = ((self.ball.Vmax * self.ball.Vmax) / (2 * self.g)) - ((self.g * x * x) / (2 * self.ball.Vmax * self.ball.Vmax))
-        return y
+        return self.meter2pixel(int(x1/5)*5, (int(y1/5)*5))
 
     def mouse_move(self, event):
-        if self.find_conclusion(event.x, event.y,*self.but_rec):
+        if self.find_collision(event.x, event.y, *self.but_rec):
             self.in_but = True
         else:
             self.in_but = False
@@ -266,7 +261,15 @@ class BallApp(tk.Toplevel):
                 for g in self.graph_list:
                     self.canvas.delete(g)
                 self.canvas.delete(self.graph)
+
+                self.canvas.delete(self.button_graf)
+                self.but_rec = [960, 50, 1000, 90]
+                self.button_graf = self.canvas.create_rectangle(self.but_rec)
+                self.in_but = False
             else:
+                self.canvas.delete(self.button_graf)
+                self.but_rec = [710, 50, 750, 90]
+                self.button_graf = self.canvas.create_rectangle(self.but_rec)
                 self.draw_graph()
                 if self.OK:
                     self.canvas.lift(self.OK)
@@ -274,6 +277,7 @@ class BallApp(tk.Toplevel):
                     self.canvas.lift(self.FALSE)
                 if self.graph:
                     self.graph = self.canvas.create_line(self.v_list)
+                self.in_but = False
 
         if event:
             self.click = True
@@ -282,6 +286,6 @@ class BallApp(tk.Toplevel):
         if event:
             self.click = False
 
-    def find_conclusion(self, x, y, x1, y1, x2, y2):
+    def find_collision(self, x, y, x1, y1, x2, y2):
         if x1 < x < x2 and y1 < y < y2:
             return True

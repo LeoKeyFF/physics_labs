@@ -29,9 +29,3 @@ class Ball:
         self.x = x
         self.y = y
         self.draw()
-
-    def calc_cords(self, t):
-        g = 9.8
-        x = self.V0 * (math.cos(math.pi * self.alpha / 180)) * t
-        y = self.V0 * (math.sin(math.pi * self.alpha / 180)) * t - ((g * t * t) / 2)
-        return x,y
