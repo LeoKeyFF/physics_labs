@@ -90,7 +90,7 @@ class BallApp(tk.Toplevel):
         self.lab3.grid(row=3, column=10, sticky=tk.SW)
 
         aimx, aimy = self.pixel2meter(self.aim.x, self.aim.y)
-        self.lab3 = tk.Label(self, text='Центр мишени:\n' + '(x=' + str(round(aimx)) + '; y=' + str(round(aimy))+ ')', font=("Tahoma", 13))
+        self.lab3 = tk.Label(self, text='Центр мишени:\n' + '(x=' + str(round(aimx)) + '; y=' + str(round(aimy))+ ')', font='Constantia 12')
         self.lab3.grid(row=4, column=10, sticky=tk.NW)
 
         self.bind('<KeyPress>', self.key_press)
@@ -99,45 +99,51 @@ class BallApp(tk.Toplevel):
         self.bind('<ButtonRelease-1>', self.mouse_release)
 
     def action(self):
-        if self.start:
-
-            ballx, bally = Ballistics.calc_cords(self.t, self.ball.V0, self.ball.alpha)
-            if bally < 0:
-                bally = 0
-                self.FALSE_im = ImageTk.PhotoImage(Image.open('images/FALSE.png'))
-                self.FALSE = self.canvas.create_image(self.width/2, self.height/2, image=self.FALSE_im)
-                self.start = False
-            self.t += 0.03
-            xp, yp = self.meter2pixel(ballx, bally)
-
-            if self.collision(xp, yp - self.ball.size, self.ball.size, self.ball.size, self.aim.x, self.aim.y-self.aim.height/2, self.aim.width, self.aim.height):
-                self.OK_im = ImageTk.PhotoImage(Image.open('images/OK.png'))
-                self.OK = self.canvas.create_image(self.width/2, self.height/2, image=self.OK_im)
-                self.start = False
-
-            if self.ball.V0 > self.ball.Vmax:
-                self.start = False
-
-            if round(xp, 0) in range(100, 100 + 80*self.meter, 1):
-                self.count += 1
-            if self.count in range(0, 800, 10):
-                oval = self.canvas.create_oval(xp+3, yp - 20+3, xp+ 7+3, yp - 20+3 + 7, fill = 'grey', outline = "grey")
-                self.oval_list.append(oval)
-
-            self.ball.move(xp, yp)
-
-            V = Ballistics.calc_velocity(v0=self.ball.V0, t=self.t, alpha=self.ball.alpha)
-            self.v_list.append((800 + self.t*30, 200 - (V*5)))
-
-            if self.graph:
-                self.canvas.delete(self.graph)
-            if len(self.v_list) > 1:
-                if self.show_graf:
-                    self.graph = self.canvas.create_line(self.v_list)
-
-        else:
+        if not self.start:
             self.t = 0
+            self.after(300, lambda: self.action())
+            return
 
+        if self.ball.V0 > self.ball.Vmax:
+            self.start = False
+            self.after(300, lambda: self.action())
+            return
+
+        ballx, bally = Ballistics.calc_cords(self.t, self.ball.V0, self.ball.alpha)
+
+        if bally < 0:
+            bally = 0
+            self.FALSE_im = ImageTk.PhotoImage(Image.open('images/FALSE.png'))
+            self.FALSE = self.canvas.create_image(self.width/2, self.height/2, image=self.FALSE_im)
+            self.start = False
+
+        xp, yp = self.meter2pixel(ballx, bally)
+
+        if self.collision(xp, yp - self.ball.size, self.ball.size, self.ball.size, self.aim.x, self.aim.y-self.aim.height/2, self.aim.width, self.aim.height):
+            self.OK_im = ImageTk.PhotoImage(Image.open('images/OK.png'))
+            self.OK = self.canvas.create_image(self.width/2, self.height/2, image=self.OK_im)
+            self.start = False
+
+        self.ball.move(xp, yp)
+
+        # draw path
+        if round(xp, 0) in range(100, 100 + 80*self.meter, 1):
+            self.count += 1
+        if self.count in range(0, 800, 10):
+            oval = self.canvas.create_oval(xp+3, yp - 20+3, xp+ 7+3, yp - 20+3 + 7, fill = 'grey', outline = "grey")
+            self.oval_list.append(oval)
+
+        # draw velocity graph
+        V = Ballistics.calc_velocity(v0=self.ball.V0, t=self.t, alpha=self.ball.alpha)
+        self.v_list.append((800 + self.t*30, 200 - (V*5)))
+
+        if self.graph:
+            self.canvas.delete(self.graph)
+        if len(self.v_list) > 1:
+            if self.show_graf:
+                self.graph = self.canvas.create_line(self.v_list)
+
+        self.t += 0.03
         self.after(30, lambda: self.action())
 
 
@@ -224,7 +230,7 @@ class BallApp(tk.Toplevel):
 
                 if self.graph:
                     self.canvas.delete(self.graph)
-                    self.v_list.clear()
+                self.v_list.clear()
 
                 if len(self.oval_list) > 0:
                     self.count = 0
@@ -276,7 +282,8 @@ class BallApp(tk.Toplevel):
                 if self.FALSE:
                     self.canvas.lift(self.FALSE)
                 if self.graph:
-                    self.graph = self.canvas.create_line(self.v_list)
+                    self.canvas.delete(self.graph)
+                self.graph = self.canvas.create_line(self.v_list)
                 self.in_but = False
 
         if event:
