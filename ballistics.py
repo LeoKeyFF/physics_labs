@@ -4,9 +4,13 @@ import math
 class Ballistics:
     g = 9.8
     @staticmethod
-    def calc_velocity(v0, alpha, t):
+    def calc_velocity_y(v0, alpha, t):
         g = Ballistics.g
         return v0 * math.sin(math.pi * alpha / 180) - t * g
+
+    @staticmethod
+    def calc_velocity_x(v0, alpha):
+        return v0 * math.cos(math.pi * alpha / 180)
 
     @staticmethod
     def calc_max_aim_y(x, v_max):

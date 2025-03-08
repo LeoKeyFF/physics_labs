@@ -6,6 +6,8 @@ from PIL import ImageTk, Image
 from aim import Aim
 from ball import Ball
 from ballistics import Ballistics
+from graph import Graph
+
 
 class BallApp(tk.Toplevel):
     def __init__(self):
@@ -32,23 +34,29 @@ class BallApp(tk.Toplevel):
 
         self.count = 0
         self.oval_list = []
-        self.graph_list = []
 
-        self.v_list = []
-        self.graph = None
+        self.v_y_list = []
+        self.v_x_list = []
 
         #grafic show/hide button
-        self.button_graf = None
         self.click = False
-        self.in_but = False
-        self.but_rec = [960, 50, 1000, 90]
-        self.in_but = False
-        self.show_graf = False
+
+        self.button_graph_y = None
+        self.in_but_graph_y = False
+        self.but_rec_graph_y = [960, 360, 1000, 400]
+        self.button_graph_x = None
+        self.in_but_graph_x = False
+        self.but_rec_graph_x = [960, 400, 1000, 440]
+        self.button_graph_close = None
+        self.in_but_graph_close = False
+        self.but_rec_graph_close = [710, 50, 750, 90]
 
         self.geometry(f'{self.width+250}x{self.height + 100}')
         self.resizable(True, False)
         self.canvas = tk.Canvas(self, bg='white',width=self.width, height=self.height)
         self.canvas.grid(column=0, row=0, sticky=tk.NSEW, pady=5, padx=5, columnspan=10, rowspan = 10)
+
+        self.graph = Graph(self.canvas, self.width, self.v_y_list)
 
         x0p, y0p = self.meter2pixel(0, 0)
         self.ball = Ball(x0p, y0p, self.canvas)
@@ -134,15 +142,20 @@ class BallApp(tk.Toplevel):
             self.oval_list.append(oval)
 
         # draw velocity graph
-        V = Ballistics.calc_velocity(v0=self.ball.V0, t=self.t, alpha=self.ball.alpha)
-        self.v_list.append((800 + self.t*30, 200 - (V*5)))
+        v_y = Ballistics.calc_velocity_y(v0=self.ball.V0, t=self.t, alpha=self.ball.alpha)
+        self.v_y_list.append((800 + self.t * 30, 200 - (v_y * 5)))
 
-        if self.graph:
-            self.canvas.delete(self.graph)
-        if len(self.v_list) > 1:
-            if self.show_graf:
-                self.graph = self.canvas.create_line(self.v_list)
+        v_x = Ballistics.calc_velocity_x(v0=self.ball.V0, alpha=self.ball.alpha)
+        self.v_x_list.append((800 + self.t * 30, 200 - (v_x * 5)))
 
+        self.graph.delete_line()
+        if len(self.v_y_list) > 1:
+            if self.graph.show:
+                if self.graph.type == "y":
+                    self.graph.line_list = self.v_y_list
+                elif self.graph.type == "x":
+                    self.graph.line_list = self.v_x_list
+                self.graph.draw_line()
         self.t += 0.03
         self.after(30, lambda: self.action())
 
@@ -168,35 +181,8 @@ class BallApp(tk.Toplevel):
         self.canvas.create_text(self.x0 - 40, 30, text='y(м)', font='Constantia 20')
         self.canvas.create_text(self.width - 30, self.y0 + 40, text='x(м)', font='Constantia 20')
 
-        self.button_graf = self.canvas.create_rectangle(self.but_rec)
-
-
-    def draw_graph(self):
-        gr_x, gr_y = self.meter2pixel(70, 40)
-        gr_x2, gr_y2 = self.meter2pixel(70, 20)
-        gr_x3, gr_y3 = self.meter2pixel(70, 30)
-        g1 = self.canvas.create_rectangle(gr_x - 50, gr_y - 60, self.width, gr_y2 + 60, fill="white")
-        self.graph_list.append(g1)
-        g2 = self.canvas.create_rectangle(gr_x - 40, gr_y - 50, self.width, gr_y2 + 50)
-        self.graph_list.append(g2)
-        g3 = self.canvas.create_line(gr_x, gr_y - 50, gr_x2, gr_y2 + 50, width=2)
-        self.graph_list.append(g3)
-        g4 = self.canvas.create_line(gr_x - 40, gr_y3, self.width, gr_y3, width=2)
-        self.graph_list.append(g4)
-        for k in range(1, 10, 1):
-            g5 = self.canvas.create_line((gr_x + k * 30, gr_y3 + 5), (gr_x + k * 30, gr_y3 - 5), width=3)
-            self.graph_list.append(g5)
-            g6 = self.canvas.create_text(gr_x + k * 30, gr_y3 + 20, text=str(k), font='Constantia 8')
-            self.graph_list.append(g6)
-        for k in range(-25, 26, 5):
-            g7 = self.canvas.create_line((gr_x - 5, gr_y3 - k * 5), (gr_x + 5, gr_y3 - k * 5), width=3)
-            self.graph_list.append(g7)
-            g8 = self.canvas.create_text(gr_x - 20, gr_y3 - k * 5, text=str(k), font='Constantia 8')
-            self.graph_list.append(g8)
-        g9 = self.canvas.create_text(gr_x - 20, gr_y - 40, text='Vy(м/с)', font='Constantia 8')
-        self.graph_list.append(g9)
-        g10 = self.canvas.create_text(self.width - 20, gr_y3 - 20, text='t(с)', font='Constantia 8')
-        self.graph_list.append(g10)
+        self.button_graph_y = self.canvas.create_rectangle(self.but_rec_graph_y)
+        self.button_graph_x = self.canvas.create_rectangle(self.but_rec_graph_x)
 
     def draw_cords_axes(self):
         self.canvas.create_line(0, self.y0, self.width, self.y0, width=4)
@@ -227,10 +213,8 @@ class BallApp(tk.Toplevel):
                 self.ball.V0 = int(self.num_v0.get())
                 self.ball.alpha = int(self.num_alpha.get())
                 self.start = True
-
-                if self.graph:
-                    self.canvas.delete(self.graph)
-                self.v_list.clear()
+                self.v_y_list.clear()
+                self.v_x_list.clear()
 
                 if len(self.oval_list) > 0:
                     self.count = 0
@@ -254,37 +238,57 @@ class BallApp(tk.Toplevel):
         return self.meter2pixel(int(x1/5)*5, (int(y1/5)*5))
 
     def mouse_move(self, event):
-        if self.find_collision(event.x, event.y, *self.but_rec):
-            self.in_but = True
+        if self.find_collision(event.x, event.y, *self.but_rec_graph_y):
+            self.in_but_graph_y = True
         else:
-            self.in_but = False
+            self.in_but_graph_y = False
+
+        if self.find_collision(event.x, event.y, *self.but_rec_graph_x):
+            self.in_but_graph_x = True
+        else:
+            self.in_but_graph_x = False
+
+        if self.find_collision(event.x, event.y, *self.but_rec_graph_close):
+            self.in_but_graph_close = True
+        else:
+            self.in_but_graph_close = False
 
 
     def mouse_click(self, event):
-        if self.in_but and event:
-            self.show_graf = not self.show_graf
-            if not self.show_graf:
-                for g in self.graph_list:
-                    self.canvas.delete(g)
-                self.canvas.delete(self.graph)
+        if self.in_but_graph_y and event:
+            self.graph.type = "y"
+            self.graph.line_list = self.v_y_list
+            self.graph.show = True
+            self.graph.draw()
+            self.canvas.delete(self.button_graph_close)
+            self.button_graph_close = self.canvas.create_rectangle(self.but_rec_graph_close)
+            if self.OK:
+                self.canvas.lift(self.OK)
+            if self.FALSE:
+                self.canvas.lift(self.FALSE)
+            self.graph.draw_line()
 
-                self.canvas.delete(self.button_graf)
-                self.but_rec = [960, 50, 1000, 90]
-                self.button_graf = self.canvas.create_rectangle(self.but_rec)
-                self.in_but = False
-            else:
-                self.canvas.delete(self.button_graf)
-                self.but_rec = [710, 50, 750, 90]
-                self.button_graf = self.canvas.create_rectangle(self.but_rec)
-                self.draw_graph()
-                if self.OK:
-                    self.canvas.lift(self.OK)
-                if self.FALSE:
-                    self.canvas.lift(self.FALSE)
-                if self.graph:
-                    self.canvas.delete(self.graph)
-                self.graph = self.canvas.create_line(self.v_list)
-                self.in_but = False
+        if self.in_but_graph_x and event:
+            self.graph.type = "x"
+            self.graph.line_list = self.v_x_list
+            self.graph.show = True
+            self.graph.draw()
+            self.canvas.delete(self.button_graph_close)
+            self.button_graph_close = self.canvas.create_rectangle(self.but_rec_graph_close)
+            if self.OK:
+                self.canvas.lift(self.OK)
+            if self.FALSE:
+                self.canvas.lift(self.FALSE)
+            self.graph.draw_line()
+
+        if self.in_but_graph_close and event:
+            self.graph.show = False
+            self.graph.delete()
+            self.canvas.delete(self.button_graph_close)
+
+        self.in_but_graph_y = False
+        self.in_but_graph_x = False
+        self.in_but_graph_close = False
 
         if event:
             self.click = True
@@ -296,3 +300,5 @@ class BallApp(tk.Toplevel):
     def find_collision(self, x, y, x1, y1, x2, y2):
         if x1 < x < x2 and y1 < y < y2:
             return True
+
+
