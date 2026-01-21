@@ -1,3 +1,4 @@
+import math
 import random
 import tkinter as tk
 
@@ -10,21 +11,25 @@ from graph import Graph
 
 
 class BallApp(tk.Toplevel):
-    def __init__(self):
+    def __init__(self, task):
         super().__init__()
         # --------- Design frames----------------------------------------------
+        self.task = task
         self.title("Бросание тела")
         self.width = 1000
         self.height = 600
         self.t = 0
         self.x0 = 100
         self.y0 = 500
-        self.meter = 10
+        self.meter = self.task.meter
+        self.step = int((self.width - self.x0) / 9)
+
+        self.Vmax = task.Vmax
 
         self.num_v0 = tk.IntVar()
         self.num_alpha = tk.IntVar()
-        self.num_v0.set(20)
-        self.num_alpha.set(30)
+        self.num_v0.set(self.task.velocity if self.task.velocity is not None else 20)
+        self.num_alpha.set(self.task.angle if self.task.angle is not None else 30)
 
         self.start = False
         self.FALSE_im = None
@@ -56,13 +61,16 @@ class BallApp(tk.Toplevel):
         self.canvas = tk.Canvas(self, bg='white',width=self.width, height=self.height)
         self.canvas.grid(column=0, row=0, sticky=tk.NSEW, pady=5, padx=5, columnspan=10, rowspan = 10)
 
-        self.graph = Graph(self.canvas, self.width, self.v_y_list)
+        self.graph = Graph(self.canvas, self.width, self.v_y_list, self.Vmax)
 
-        x0p, y0p = self.meter2pixel(0, 0)
-        self.ball = Ball(x0p, y0p, self.canvas)
+        x0m, y0m = task.x0, task.y0
+        x0p, y0p = self.meter2pixel(x0m, y0m)
+        self.ball = Ball(x0p, y0p, x0m, y0m, self.Vmax, self.canvas)
 
-        x, y = self.set_aim_cords()
+        x, y = self.set_aim_cords(x0p, y0p)
         self.aim = Aim(x, y, self.canvas)
+
+        self.correct_answer = 5
 
         self.draw_background()
         self.draw_cords_axes()
@@ -72,34 +80,47 @@ class BallApp(tk.Toplevel):
 
         self.action()
 
+        self.old_xp = self.x0
+        self.old_yp = self.y0
+
         self.lab1 = tk.Label(self, text='Начальная скорость:', font=("Tahoma", 13), width=19)
         self.lab1.grid(row=10, column=0, sticky=tk.NW)
 
-        self.entry1 = tk.Entry(self, width=10, textvariable=self.num_v0, font=("Tahoma", 13))
-        self.entry1.grid(row=10, column=1, sticky=tk.NW)
+        if self.task.velocity is None:
+            self.entry1 = tk.Entry(self, width=10, textvariable=self.num_v0, font=("Tahoma", 13))
+            self.entry1.grid(row=10, column=1, sticky=tk.NW)
+        else:
+            self.lab1 = tk.Label(self, text=self.task.velocity, font=("Tahoma", 13), width=10)
+            self.lab1.grid(row=10, column=1, sticky=tk.NW)
 
         self.lab2 = tk.Label(self, text='Угол:', font=("Tahoma", 13), width=5)
         self.lab2.grid(row=11, column=0, sticky=tk.NW)
 
-        self.entry2 = tk.Entry(self, width=10, textvariable=self.num_alpha, font=("Tahoma", 13))
-        self.entry2.grid(row=11, column=1, sticky=tk.NW)
+        if self.task.angle is None:
+            self.entry2 = tk.Entry(self, width=10, textvariable=self.num_alpha, font=("Tahoma", 13))
+            self.entry2.grid(row=11, column=1, sticky=tk.NW)
+        else:
+            self.lab1 = tk.Label(self, text=self.task.angle, font=("Tahoma", 13), width=10)
+            self.lab1.grid(row=11, column=1, sticky=tk.NW)
 
-        self.lab3 = tk.Label(self, text='(НЕ должно превышать "25")', font=("Tahoma", 13), width=25)
+        self.lab3 = tk.Label(self, text='(НЕ должно превышать "' + str(self.ball.Vmax) + '")', font=("Tahoma", 13), width=25)
         self.lab3.grid(row=10, column=2, sticky=tk.NW)
 
-        self.lab3 = tk.Label(self, text='Задача:', font=("Tahoma", 13))
-        self.lab3.grid(row=0, column=10, sticky=tk.SW)
+        self.lab4 = tk.Label(self, text='Задача:', font=("Tahoma", 13))
+        self.lab4.grid(row=0, column=10, sticky=tk.SW)
 
-        self.lab3 = tk.Label(self, wraplength=220, text='Текст задачи, где говориться, '
-                                        'что ученику надо выполнить, чтобы получить правильный ответ', font='Constantia 12', justify="left")
-        self.lab3.grid(row=1, column=10, sticky=tk.NW, rowspan = 2)
+        self.lab5 = tk.Label(self, wraplength=220, text=self.task.text, font='Constantia 12', justify="left")
+        self.lab5.grid(row=1, column=10, sticky=tk.NW, rowspan = 2)
 
-        self.lab3 = tk.Label(self, text='Дано:', font=("Tahoma", 13))
-        self.lab3.grid(row=3, column=10, sticky=tk.SW)
+        self.lab6 = tk.Label(self, text='Дано:', font=("Tahoma", 13))
+        self.lab6.grid(row=3, column=10, sticky=tk.SW)
 
         aimx, aimy = self.pixel2meter(self.aim.x, self.aim.y)
-        self.lab3 = tk.Label(self, text='Центр мишени:\n' + '(x=' + str(round(aimx)) + '; y=' + str(round(aimy))+ ')', font='Constantia 12')
-        self.lab3.grid(row=4, column=10, sticky=tk.NW)
+        self.lab7 = tk.Label(self, text='Центр мишени:\n' + '(x=' + str(round(aimx)) + '; y=' + str(round(aimy))+ ')', font='Constantia 12')
+        self.lab7.grid(row=4, column=10, sticky=tk.NW)
+
+        self.lab8 = tk.Label(self, text='Результат:', font=("Tahoma", 13))
+        self.lab8.grid(row=5, column=10, sticky=tk.SW)
 
         self.bind('<KeyPress>', self.key_press)
         self.bind('<Button-1>', self.mouse_click)
@@ -117,7 +138,7 @@ class BallApp(tk.Toplevel):
             self.after(300, lambda: self.action())
             return
 
-        ballx, bally = Ballistics.calc_cords(self.t, self.ball.V0, self.ball.alpha)
+        ballx, bally = Ballistics.calc_cords(self.t, self.ball.V0, self.ball.alpha, self.ball.x0, self.ball.y0)
 
         if bally < 0:
             bally = 0
@@ -135,18 +156,18 @@ class BallApp(tk.Toplevel):
         self.ball.move(xp, yp)
 
         # draw path
-        if round(xp, 0) in range(100, 100 + 80*self.meter, 1):
-            self.count += 1
-        if self.count in range(0, 800, 10):
+        if int (math.dist((xp, yp), (self.old_xp, self.old_yp,))) > 30:
             oval = self.canvas.create_oval(xp+3, yp - 20+3, xp+ 7+3, yp - 20+3 + 7, fill = 'grey', outline = "grey")
             self.oval_list.append(oval)
+            self.old_xp = xp
+            self.old_yp = yp
 
         # draw velocity graph
         v_y = Ballistics.calc_velocity_y(v0=self.ball.V0, t=self.t, alpha=self.ball.alpha)
-        self.v_y_list.append((800 + self.t * 30, 200 - (v_y * 5)))
+        self.v_y_list.append(( 800 + self.t * (self.width - 750)/10, 200 - ( v_y / self.ball.Vmax * 125)))
 
         v_x = Ballistics.calc_velocity_x(v0=self.ball.V0, alpha=self.ball.alpha)
-        self.v_x_list.append((800 + self.t * 30, 200 - (v_x * 5)))
+        self.v_x_list.append((800 + self.t * (self.width - 750)/10, 200 - ( v_x / self.ball.Vmax * 125)))
 
         self.graph.delete_line()
         if len(self.v_y_list) > 1:
@@ -156,6 +177,7 @@ class BallApp(tk.Toplevel):
                 elif self.graph.type == "x":
                     self.graph.line_list = self.v_x_list
                 self.graph.draw_line()
+
         self.t += 0.03
         self.after(30, lambda: self.action())
 
@@ -166,18 +188,16 @@ class BallApp(tk.Toplevel):
 
 
     def draw_background(self):
-        width_m = int(self.width / self.meter)
-        height_m = int(self.height / self.meter)
 
-        for i in range(10, width_m - 15, 10):
-            self.canvas.create_line((self.x0 + i * self.meter, 0), (self.x0 + i * self.meter, self.height), fill="#D3D3D3", width=3)
-            self.canvas.create_text(self.x0 + i * self.meter, self.y0 + 25, text=str(int(i)), font='Constantia 20')
-        for i in range(10, height_m - 10, 10):
-            self.canvas.create_line((0, self.y0 - i * self.meter), (self.width, self.y0 - i * self.meter), fill="#D3D3D3", width=3)
-            self.canvas.create_text(self.x0 + 25, self.y0 - i * self.meter, text=str(int(i)), font='Constantia 20')
+        for i in range(self.step, self.width-self.x0, self.step):
+            self.canvas.create_line((self.x0 + i, 0), (self.x0 + i, self.height), fill="#D3D3D3", width=3)
+            self.canvas.create_text(self.x0 + i, self.y0 + 25, text=str(int(i/self.meter)), font='Constantia 20')
+        for i in range(self.step, self.y0, self.step):
+            self.canvas.create_line((0, self.y0 - i), (self.width, self.y0 - i), fill="#D3D3D3", width=3)
+            self.canvas.create_text(self.x0 + 25, self.y0 - i, text=str(int(i/self.meter)), font='Constantia 20')
 
-        self.canvas.create_polygon((self.width - 20, self.y0 - 10), (self.width, self.y0), (self.width - 20, self.y0 + 10))
-        self.canvas.create_polygon((self.x0 - 10, 20), (self.x0, 0), (self.x0 + 10, 20))
+        self.canvas.create_polygon((self.width - 20, self.y0 - 10), (self.width, self.y0-1.5), (self.width, self.y0+1.5) , (self.width - 20, self.y0 + 10))
+        self.canvas.create_polygon((self.x0 - 10, 20), (self.x0-1.5, 0), (self.x0+1.5, 0) , (self.x0 + 10, 20))
         self.canvas.create_text(self.x0 - 40, 30, text='y(м)', font='Constantia 20')
         self.canvas.create_text(self.width - 30, self.y0 + 40, text='x(м)', font='Constantia 20')
 
@@ -188,13 +208,10 @@ class BallApp(tk.Toplevel):
         self.canvas.create_line(0, self.y0, self.width, self.y0, width=4)
         self.canvas.create_line(self.x0, 0, self.x0, self.height, width=4)
 
-        width_m = int(self.width / self.meter)
-        height_m = int(self.height / self.meter)
-
-        for i in range(10, width_m, 10):
-            self.canvas.create_line((self.x0 + i * self.meter, self.y0 + 10), (self.x0 + i * self.meter, self.y0 - 10), width=3)
-        for i in range(10, height_m, 10):
-            self.canvas.create_line((self.x0 + 10, self.y0 - i * self.meter), (self.x0 - 10, self.y0 - i * self.meter), width=3)
+        for i in range(self.step, self.width-self.x0, self.step):
+            self.canvas.create_line((self.x0 + i, self.y0 + 10), (self.x0 + i, self.y0 - 10), width=3)
+        for i in range(self.step, self.y0, self.step):
+            self.canvas.create_line((self.x0 + 10, self.y0 - i), (self.x0 - 10, self.y0 - i), width=3)
 
 
     def meter2pixel(self, x, y):
@@ -208,7 +225,7 @@ class BallApp(tk.Toplevel):
         return x, y
 
     def key_press(self, event):
-        if event.keysym == 'Return':
+        if event.keysym == 'Return' and not self.start:
             try:
                 self.ball.V0 = int(self.num_v0.get())
                 self.ball.alpha = int(self.num_alpha.get())
@@ -222,19 +239,21 @@ class BallApp(tk.Toplevel):
                         self.canvas.delete(i)
 
             except Exception as e:
-                self.ball.V0 = 25
+                self.ball.V0 = self.ball.Vmax
                 self.ball.alpha = 30
             if self.OK:
                 self.canvas.delete(self.OK)
             if self.FALSE:
                 self.canvas.delete(self.FALSE)
 
-    def set_aim_cords(self):
-        x1 = random.randint(20, 70)
-        y1 = random.randint(5, 30)
-        y_max = Ballistics.calc_max_aim_y(x1, self.ball.Vmax)
+    def set_aim_cords(self, ball_x0p, ball_y0p):
+        min_x_cord, min_y_cord = self.pixel2meter(ball_x0p + 2*self.step,  self.y0 - self.step)
+        max_x_cord, max_y_cord = self.pixel2meter(self.x0+7*self.step, self.y0-4*self.step)
+        x1 = random.randint(int(min_x_cord), int(max_x_cord))
+        y1 = random.randint(int(min_y_cord), int(max_y_cord))
+        y_max = Ballistics.calc_max_aim_y(x1, self.ball.Vmax, self.ball.x0, self.ball.y0)
         if y1 > y_max:
-            return self.set_aim_cords()
+            return self.set_aim_cords(ball_x0p, ball_y0p)
         return self.meter2pixel(int(x1/5)*5, (int(y1/5)*5))
 
     def mouse_move(self, event):

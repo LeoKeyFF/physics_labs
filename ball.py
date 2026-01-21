@@ -2,19 +2,19 @@ import math
 from PIL import Image, ImageTk
 
 class Ball:
-    def __init__(self,x0, y0, canvas):
+    def __init__(self,x0, y0, x0m, y0m, Vmax, canvas):
         pass
         self.x = x0
         self.y = y0
         self.canvas = canvas
         self.body = None
         self.alpha = 45
-        self.x0 = x0
-        self.y0 = y0
+        self.x0 = x0m
+        self.y0 = y0m
         self.img = None
 
         self.V0 = 20
-        self.Vmax = 25
+        self.Vmax = Vmax
         self.size = 20
 
     def draw(self):
