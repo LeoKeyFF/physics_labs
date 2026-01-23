@@ -2,13 +2,14 @@ import sqlite3
 
 database_path = "database.db"
 
-def create_base(user_name = 'Вася'):
+def create_base():
     connection = sqlite3.connect(database_path)
     cursor = connection.cursor()
 
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS RESULTS (
     TaskID INTEGER PRIMARY KEY,
+    TaskNumber INT,
     UserName varchar(255),
     Exercise1 BOOLEAN,
     Exercise2 BOOLEAN
@@ -56,8 +57,6 @@ def acc_check_for_same_user_name(user_login):
             if login[0] == user_login:
                 return False
 
-    print(logins)
-
     return True
 
 def acc_sign_up(login, password, status):
@@ -68,11 +67,12 @@ def acc_sign_up(login, password, status):
         f"INSERT INTO ACCOUNTS (Login, Password, Status) VALUES ('{login}', '{password}', '{status}')"
     )
 
-    tasks = 3
-    for task in range(0, tasks):
-        cursor.execute(
-            f"INSERT INTO RESULTS (UserName) VALUES ('{login}')"
-        )
+    if status == "student":
+        tasks = 3
+        for task in range(0, tasks):
+            cursor.execute(
+                f"INSERT INTO RESULTS (TaskNumber, UserName) VALUES ('{task + 1}', '{login}')"
+            )
 
     connection.commit()
     connection.close()
@@ -84,11 +84,12 @@ def sign_in(login, password):
     password_true = cursor.execute(f"SELECT Password FROM ACCOUNTS WHERE Login = '{login}'").fetchall()
     status = cursor.execute(f"SELECT Status FROM ACCOUNTS WHERE Login = '{login}'").fetchall()
 
+    connection.close()
+
     if len(password_true) > 0:
         password_true = password_true[0][0]
     else:
         return None
-    print(password_true)
 
     if password_true == password:
         if len(status) > 0:
@@ -96,4 +97,55 @@ def sign_in(login, password):
         return status
     else:
         return False
+
+def get_stat():
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    stat = []
+    logins_ = cursor.execute(f"SELECT UserName FROM RESULTS").fetchall()
+    logins=[]
+
+    if len(logins_) > 0:
+        for l in logins_:
+            if l[0] not in logins:
+                logins.append(l[0])
+    print(logins)
+
+    for login in logins:
+        for task_number in range(1, 4):
+            ex1 = cursor.execute(
+                f"SELECT Exercise1 FROM RESULTS WHERE UserName = '{login}' AND TaskNumber = {task_number}"
+            ).fetchall()[0][0]
+            ex2 = cursor.execute(
+                f"SELECT Exercise2 FROM RESULTS WHERE UserName = '{login}' AND TaskNumber = {task_number}"
+            ).fetchall()[0][0]
+            if ex1 is None:
+                ex1 = "Не приступал(а)"
+            elif ex1 == 1:
+                ex1 = "Правильно"
+            else:
+                ex1 = "Ошибка"
+
+            if ex2 is None:
+                ex2 = "Не приступал(а)"
+            elif ex2 == 1:
+                ex2 = "Правильно"
+            else:
+                ex2 = "Ошибка"
+
+            stat.append(
+                {
+                    "login":login,
+                    "task_number":task_number,
+                    "ex1": ex1,
+                    "ex2":ex2
+                }
+            )
+    connection.close()
+    print(stat)
+    return stat
+
+
+
 

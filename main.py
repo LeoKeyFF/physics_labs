@@ -5,6 +5,8 @@ from tkinter import ttk
 
 import database
 from ball_app import BallApp
+from scrollable_frame import ScrollableFrame
+
 
 class Task:
     def __init__(self, number,  name, text, velocity, angle, x0, y0, Vmax, meter):
@@ -71,6 +73,103 @@ def create_task_block(parent_frame, block_title, tasks):
         ).pack(anchor="e", padx=10, pady=(0, 5))
 
     return block_frame
+
+
+def create_stat_block(parent_frame, login, stat):
+    table_frame = tk.Frame(parent_frame, bg="white", relief="solid", bd=1)
+    table_frame.pack(fill="x", padx=20, pady=20)
+
+    # Заголовок таблицы с именем исполнителя
+    header_frame = tk.Frame(table_frame, bg="#2c3e50")
+    header_frame.pack(fill="x")
+
+    # Название таблицы с исполнителем
+    tk.Label(
+        header_frame,
+        text=login,
+        font=("Tahoma", 12, "bold"),
+        bg="#2c3e50",
+        fg="white",
+        pady=10
+    ).pack()
+
+    # Заголовки столбцов таблицы
+    columns_frame = tk.Frame(table_frame, bg="#3498db")
+    columns_frame.pack(fill="x")
+
+    headers = ["№ Задания", "Упражнение 1", "Упражнение 2"]
+
+    for col, header in enumerate(headers):
+        label = tk.Label(
+            columns_frame,
+            text=header,
+            font=("Tahoma", 11, "bold"),
+            bg="#3498db",
+            fg="white",
+            padx=10,
+            pady=8,
+            width=25
+        )
+        label.grid(row=0, column=col)
+        label.config(anchor="center")
+
+    columns_frame.grid_columnconfigure(0, weight=1)
+    columns_frame.grid_columnconfigure(1, weight=1)
+    columns_frame.grid_columnconfigure(2, weight=1)
+
+
+    for row, statistic in enumerate(stat, start=1):
+
+        row_color = "#f8f9fa" if row % 2 == 0 else "white"
+        row_frame = tk.Frame(table_frame, bg=row_color)
+        row_frame.pack(fill="x")
+
+        label_id = tk.Label(
+            row_frame,
+            text=str(statistic["task_number"]),
+            font=("Tahoma", 11, "bold"),
+            bg=row_color,
+            padx=10,
+            pady=10,
+            width=8
+        )
+        label_id.grid(row=0, column=0)
+        label_id.config(anchor="center")
+
+        label_ex1 = tk.Label(
+            row_frame,
+            text=str(statistic["ex1"]),
+            font=("Tahoma", 10),
+            bg=row_color,
+            padx=10,
+            pady=10,
+            width=25,
+            justify="center",
+            wraplength=250
+        )
+        label_ex1.grid(row=0, column=1)
+        label_ex1.config(anchor="center")
+
+        label_ex2 = tk.Label(
+            row_frame,
+            text=str(statistic["ex2"]),
+            font=("Tahoma", 10),
+            bg=row_color,
+            padx=10,
+            pady=10,
+            width=25,
+            justify="center",
+            wraplength=250
+        )
+        label_ex2.grid(row=0, column=2)
+        label_ex2.config(anchor="center")
+
+        row_frame.grid_columnconfigure(0, weight=1)
+        row_frame.grid_columnconfigure(1, weight=1)
+        row_frame.grid_columnconfigure(2, weight=1)
+
+
+    return table_frame
 
 
 class MainApp(tk.Tk):
@@ -367,7 +466,7 @@ class MainApp(tk.Tk):
 
         messagebox.showinfo("Успех", "Регистрация прошла успешно!")
 
-        self.show_student_window()
+        self.show_login_window()
 
     def sign_in(self):
         login = self.login_entry.get()
@@ -388,6 +487,9 @@ class MainApp(tk.Tk):
             status = database.sign_in(login, password)
             if status == "student":
                 self.show_student_window()
+            else:
+                print(status)
+                self.show_teacher_window()
             messagebox.showinfo("Успех", "Вход выполнен успешно!")
 
     def show_student_window(self):
@@ -407,6 +509,34 @@ class MainApp(tk.Tk):
         ).pack(pady=(20, 10))
 
         create_task_block(content_frame, "Баллистические задачи", self.tasks)
+
+    def show_teacher_window(self):
+        self.clear_main_frame()
+
+        self.create_user_header(self.main_frame, self.current_user)
+
+        # content_frame = tk.Frame(self.main_frame)
+        # content_frame.pack(fill="both", expand=True)
+
+
+        stat = database.get_stat()
+        logins = list(set([item['login'] for item in stat]))
+
+        scroll_frame = ScrollableFrame(self.main_frame)
+        scroll_frame.pack(fill="both", expand=True)
+
+        tk.Label(
+            scroll_frame.scrollable_frame,
+            text="Статистика",
+            font=("Tahoma", 20, "bold"),
+            fg="#2c3e50"
+        ).pack(pady=(20, 10))
+
+
+        for login in logins:
+            stat_local =  [item for item in stat if item.get("login") == login]
+            create_stat_block(scroll_frame.scrollable_frame, login, stat_local)
+
 
     def create_user_header(self, parent_frame, user):
 
@@ -448,6 +578,7 @@ class MainApp(tk.Tk):
     def logout(self):
         self.current_user = None
         self.show_login_window()
+
 
 if __name__ == '__main__':
     database.create_base()
