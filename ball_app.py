@@ -4,6 +4,7 @@ import tkinter as tk
 
 from PIL import ImageTk, Image
 
+import database
 from aim import Aim
 from ball import Ball
 from ballistics import Ballistics
@@ -146,12 +147,16 @@ class BallApp(tk.Toplevel):
             self.FALSE = self.canvas.create_image(self.width/2, self.height/2, image=self.FALSE_im)
             self.start = False
 
+            database.add_result(task= self.task.number, exercise1 = False, exercise2 = False)
+
         xp, yp = self.meter2pixel(ballx, bally)
 
         if self.collision(xp, yp - self.ball.size, self.ball.size, self.ball.size, self.aim.x, self.aim.y-self.aim.height/2, self.aim.width, self.aim.height):
             self.OK_im = ImageTk.PhotoImage(Image.open('images/OK.png'))
             self.OK = self.canvas.create_image(self.width/2, self.height/2, image=self.OK_im)
             self.start = False
+
+            database.add_result(task= self.task.number, exercise1 = True, exercise2 = False)
 
         self.ball.move(xp, yp)
 
