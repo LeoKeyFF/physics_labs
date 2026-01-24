@@ -23,12 +23,16 @@ class Task:
         self.meter = meter
 
 
-def click(task):
-    wind = BallApp(task)
+def click(task, task_number, login):
+    stat = database.get_stat()
+    stat_local = [item for item in stat if item.get("login") == login and item.get("task_number") == task_number]
+    ex1 = stat_local[0]["ex1"]
+    ex2 = stat_local[0]["ex2"]
+    wind = BallApp(task, ex1, ex2, login)
     wind.grab_set()
 
 
-def create_task_block(parent_frame, block_title, tasks):
+def create_task_block(parent_frame, block_title, tasks, login):
 
     block_frame = tk.Frame(parent_frame, bg="#ecf0f1", relief="groove", bd=2)
     block_frame.pack(fill="x", padx=20, pady=10)
@@ -69,7 +73,7 @@ def create_task_block(parent_frame, block_title, tasks):
             bg="#3498db",
             fg="white",
             cursor="hand2",
-            command=partial(click, task)
+            command=partial(click, task, task.number, login)
         ).pack(anchor="e", padx=10, pady=(0, 5))
 
     return block_frame
@@ -108,7 +112,9 @@ def create_stat_block(parent_frame, login, stat):
             fg="white",
             padx=10,
             pady=8,
-            width=25
+            width=25,
+            justify="center",
+            wraplength=250
         )
         label.grid(row=0, column=col)
         label.config(anchor="center")
@@ -127,11 +133,12 @@ def create_stat_block(parent_frame, login, stat):
         label_id = tk.Label(
             row_frame,
             text=str(statistic["task_number"]),
-            font=("Tahoma", 11, "bold"),
+            font=("Tahoma", 10, "bold"),
             bg=row_color,
-            padx=10,
+            padx=0,
             pady=10,
-            width=8
+            width=22,
+            justify="center"
         )
         label_id.grid(row=0, column=0)
         label_id.config(anchor="center")
@@ -141,11 +148,10 @@ def create_stat_block(parent_frame, login, stat):
             text=str(statistic["ex1"]),
             font=("Tahoma", 10),
             bg=row_color,
-            padx=10,
+            padx=0,
             pady=10,
-            width=25,
-            justify="center",
-            wraplength=250
+            width=22,
+            justify="center"
         )
         label_ex1.grid(row=0, column=1)
         label_ex1.config(anchor="center")
@@ -155,11 +161,10 @@ def create_stat_block(parent_frame, login, stat):
             text=str(statistic["ex2"]),
             font=("Tahoma", 10),
             bg=row_color,
-            padx=10,
+            padx=0,
             pady=10,
-            width=25,
-            justify="center",
-            wraplength=250
+            width=22,
+            justify="center"
         )
         label_ex2.grid(row=0, column=2)
         label_ex2.config(anchor="center")
@@ -200,38 +205,26 @@ class MainApp(tk.Tk):
                 number=2,
                 name="Задание 2: Бросок мяча",
                 text="Текст номер 2",
-                velocity=50,
+                velocity=100,
                 angle=None,
                 x0=0,
                 y0=10,
-                Vmax=200,
+                Vmax=100,
                 meter=2
             ),
             Task(
                 number=3,
                 name="Задание 3: Бросок мяча",
                 text="Текст номер 3",
-                velocity=25,
+                velocity=None,
                 angle=33,
                 x0=30,
                 y0=50,
-                Vmax=30,
+                Vmax=35,
                 meter=5
             ),
         ]
-        self.account = ""
-        self.user_name = tk.StringVar()
-
-        if self.account == "":
-            self.show_login_window()
-
-        if self.account == "student":
-            for task in self.tasks:
-                self.task_name = tk.Label(text=task.name)
-                self.task_name.grid(row=self.tasks.index(task), column=0, sticky=tk.NW)
-
-                self.open_button = tk.Button(text="Open", command=partial(click, task))
-                self.open_button.grid(row=self.tasks.index(task), column=1, sticky=tk.NW)
+        self.show_login_window()
 
     def show_login_window(self):
         self.clear_main_frame()
@@ -508,16 +501,12 @@ class MainApp(tk.Tk):
             fg="#2c3e50"
         ).pack(pady=(20, 10))
 
-        create_task_block(content_frame, "Баллистические задачи", self.tasks)
+        create_task_block(content_frame, "Баллистические задачи", self.tasks, self.current_user)
 
     def show_teacher_window(self):
         self.clear_main_frame()
 
         self.create_user_header(self.main_frame, self.current_user)
-
-        # content_frame = tk.Frame(self.main_frame)
-        # content_frame.pack(fill="both", expand=True)
-
 
         stat = database.get_stat()
         logins = list(set([item['login'] for item in stat]))
@@ -537,6 +526,17 @@ class MainApp(tk.Tk):
             stat_local =  [item for item in stat if item.get("login") == login]
             create_stat_block(scroll_frame.scrollable_frame, login, stat_local)
 
+        tk.Button(
+            scroll_frame.scrollable_frame,
+            text="Очистить всю базу",
+            font=("Tahoma", 12, "bold"),
+            bg="#3498db",
+            fg="white",
+            width=20,
+            height=2,
+            command=self.clean_base,
+            cursor="hand2"
+        ).pack(pady=(20, 10))
 
     def create_user_header(self, parent_frame, user):
 
@@ -578,6 +578,14 @@ class MainApp(tk.Tk):
     def logout(self):
         self.current_user = None
         self.show_login_window()
+
+    def clean_base(self):
+        answer = messagebox.askyesno("Подтверждение", "Вы уверены, что хотите очистить всю базу данных?")
+        if answer:
+            database.clean_base()
+            self.show_login_window()
+        else:
+            return
 
 
 if __name__ == '__main__':

@@ -28,14 +28,14 @@ def create_base():
     connection.commit()
     connection.close()
 
-def add_result(task, exercise1, exercise2):
+def add_result(task, exercise1, exercise2, login):
     connection = sqlite3.connect(database_path)
     cursor = connection.cursor()
 
     print(task, exercise1, exercise2)
 
     cursor.execute(
-        f"UPDATE RESULTS SET Exercise1 = {exercise1}, Exercise2 = {exercise2} WHERE TaskID = {task}"
+        f"UPDATE RESULTS SET Exercise1 = {exercise1}, Exercise2 = {exercise2} WHERE TaskNumber = {task} AND UserName = '{login}'"
     )
 
     connection.commit()
@@ -145,6 +145,21 @@ def get_stat():
     connection.close()
     print(stat)
     return stat
+
+def clean_base():
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute(
+        f"DELETE FROM RESULTS"
+    )
+
+    cursor.execute(
+        f"DELETE FROM ACCOUNTS"
+    )
+
+    connection.commit()
+    connection.close()
 
 
 

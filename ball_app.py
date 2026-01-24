@@ -12,10 +12,11 @@ from graph import Graph
 
 
 class BallApp(tk.Toplevel):
-    def __init__(self, task):
+    def __init__(self, task, ex1, ex2, login):
         super().__init__()
         # --------- Design frames----------------------------------------------
         self.task = task
+        self.login = login
         self.title("Бросание тела")
         self.width = 1000
         self.height = 600
@@ -62,13 +63,21 @@ class BallApp(tk.Toplevel):
         self.canvas = tk.Canvas(self, bg='white',width=self.width, height=self.height)
         self.canvas.grid(column=0, row=0, sticky=tk.NSEW, pady=5, padx=5, columnspan=10, rowspan = 10)
 
+        self.res_frame = tk.Frame(self)
+        self.res_frame.grid(row=6, column=10, sticky=tk.N)
+        self.res2 = None
+        self.res1 = None
+
+        self.ex1 = ex1
+        self.ex2 = ex2
+
         self.graph = Graph(self.canvas, self.width, self.v_y_list, self.Vmax)
 
         x0m, y0m = task.x0, task.y0
         x0p, y0p = self.meter2pixel(x0m, y0m)
         self.ball = Ball(x0p, y0p, x0m, y0m, self.Vmax, self.canvas)
 
-        x, y = self.set_aim_cords(x0p, y0p)
+        x, y = self.set_aim_cords(x0p, y0p, self.task.angle)
         self.aim = Aim(x, y, self.canvas)
 
         self.correct_answer = 5
@@ -83,6 +92,7 @@ class BallApp(tk.Toplevel):
 
         self.old_xp = self.x0
         self.old_yp = self.y0
+
 
         self.lab1 = tk.Label(self, text='Начальная скорость:', font=("Tahoma", 13), width=19)
         self.lab1.grid(row=10, column=0, sticky=tk.NW)
@@ -104,24 +114,26 @@ class BallApp(tk.Toplevel):
             self.lab1 = tk.Label(self, text=self.task.angle, font=("Tahoma", 13), width=10)
             self.lab1.grid(row=11, column=1, sticky=tk.NW)
 
-        self.lab3 = tk.Label(self, text='(НЕ должно превышать "' + str(self.ball.Vmax) + '")', font=("Tahoma", 13), width=25)
+        self.lab3 = tk.Label(self, text='≤  ' + str(self.ball.Vmax), font=("Tahoma", 13), width=25)
         self.lab3.grid(row=10, column=2, sticky=tk.NW)
 
-        self.lab4 = tk.Label(self, text='Задача:', font=("Tahoma", 13))
+        self.lab4 = tk.Label(self, text='Задача:', font=("Tahoma", 13, "bold"))
         self.lab4.grid(row=0, column=10, sticky=tk.SW)
 
         self.lab5 = tk.Label(self, wraplength=220, text=self.task.text, font='Constantia 12', justify="left")
         self.lab5.grid(row=1, column=10, sticky=tk.NW, rowspan = 2)
 
-        self.lab6 = tk.Label(self, text='Дано:', font=("Tahoma", 13))
+        self.lab6 = tk.Label(self, text='Дано:', font=("Tahoma", 13, "bold"))
         self.lab6.grid(row=3, column=10, sticky=tk.SW)
 
         aimx, aimy = self.pixel2meter(self.aim.x, self.aim.y)
         self.lab7 = tk.Label(self, text='Центр мишени:\n' + '(x=' + str(round(aimx)) + '; y=' + str(round(aimy))+ ')', font='Constantia 12')
         self.lab7.grid(row=4, column=10, sticky=tk.NW)
 
-        self.lab8 = tk.Label(self, text='Результат:', font=("Tahoma", 13))
+        self.lab8 = tk.Label(self, text='Результат:', font=("Tahoma", 13, "bold"))
         self.lab8.grid(row=5, column=10, sticky=tk.SW)
+
+        self.result_draw()
 
         self.bind('<KeyPress>', self.key_press)
         self.bind('<Button-1>', self.mouse_click)
@@ -147,7 +159,11 @@ class BallApp(tk.Toplevel):
             self.FALSE = self.canvas.create_image(self.width/2, self.height/2, image=self.FALSE_im)
             self.start = False
 
-            database.add_result(task= self.task.number, exercise1 = False, exercise2 = False)
+            if self.ex1 == "Не приступал(а)":
+                database.add_result(task= self.task.number, exercise1 = False, exercise2 = False, login = self.login)
+                self.ex1 = "Ошибка"
+                self.ex2 = "Ошибка"
+                self.result_draw()
 
         xp, yp = self.meter2pixel(ballx, bally)
 
@@ -156,7 +172,9 @@ class BallApp(tk.Toplevel):
             self.OK = self.canvas.create_image(self.width/2, self.height/2, image=self.OK_im)
             self.start = False
 
-            database.add_result(task= self.task.number, exercise1 = True, exercise2 = False)
+            database.add_result(task= self.task.number, exercise1 = True, exercise2 = False, login = self.login)
+            self.ex1 = "Правильно"
+            self.result_draw()
 
         self.ball.move(xp, yp)
 
@@ -251,14 +269,19 @@ class BallApp(tk.Toplevel):
             if self.FALSE:
                 self.canvas.delete(self.FALSE)
 
-    def set_aim_cords(self, ball_x0p, ball_y0p):
+    def set_aim_cords(self, ball_x0p, ball_y0p, angle):
         min_x_cord, min_y_cord = self.pixel2meter(ball_x0p + 2*self.step,  self.y0 - self.step)
         max_x_cord, max_y_cord = self.pixel2meter(self.x0+7*self.step, self.y0-4*self.step)
         x1 = random.randint(int(min_x_cord), int(max_x_cord))
         y1 = random.randint(int(min_y_cord), int(max_y_cord))
-        y_max = Ballistics.calc_max_aim_y(x1, self.ball.Vmax, self.ball.x0, self.ball.y0)
+
+        if angle is None:
+            y_max = Ballistics.calc_max_aim_y_v0_const(x1, self.ball.Vmax, self.ball.x0, self.ball.y0)
+        else:
+            y_max = Ballistics.calc_max_aim_y_angle_const(x1, self.ball.Vmax, self.ball.x0, self.ball.y0, angle)
+
         if y1 > y_max:
-            return self.set_aim_cords(ball_x0p, ball_y0p)
+            return self.set_aim_cords(ball_x0p, ball_y0p, angle)
         return self.meter2pixel(int(x1/5)*5, (int(y1/5)*5))
 
     def mouse_move(self, event):
@@ -324,5 +347,14 @@ class BallApp(tk.Toplevel):
     def find_collision(self, x, y, x1, y1, x2, y2):
         if x1 < x < x2 and y1 < y < y2:
             return True
+
+    def result_draw(self):
+        for widget in self.res_frame.winfo_children():
+            widget.destroy()
+        res1 = tk.Label(self.res_frame, text='Попадание в мишень\nУпражнение 1: ' + self.ex1, font=("Tahoma", 10))
+        res1.grid(row=0, column=0, sticky=tk.N)
+
+        res2 = tk.Label(self.res_frame, text='Попадание в центр\nУпражнение 2: ' +  self.ex2, font=("Tahoma", 10))
+        res2.grid(row=1, column=0, sticky=tk.N)
 
 
