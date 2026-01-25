@@ -1,5 +1,5 @@
 class Graph():
-    def __init__(self, canvas, width, line_list, Vmax):
+    def __init__(self, canvas, width, line_list, Vmax, t_max):
         super().__init__()
         self.line = None
         self.canvas = canvas
@@ -9,23 +9,13 @@ class Graph():
         self.show = False
         self.type = "y"
         self.Vmax = Vmax
+        self.t_max = t_max
 
     def delete(self):
         for g in self.list:
             self.canvas.delete(g)
 
     def draw(self):
-        # gr_x, gr_y = 800, 100
-        # gr_x2, gr_y2 = 800, 300
-        # gr_x3, gr_y3 = 800, 200
-        # g1 = self.canvas.create_rectangle(gr_x - 50, gr_y - 60, self.width, gr_y2 + 60, fill="white")
-        # self.list.append(g1)
-        # g2 = self.canvas.create_rectangle(gr_x - 40, gr_y - 50, self.width, gr_y2 + 50)
-        # self.list.append(g2)
-        # g3 = self.canvas.create_line(gr_x, gr_y - 50, gr_x2, gr_y2 + 50, width=2)
-        # self.list.append(g3)
-        # g4 = self.canvas.create_line(gr_x - 40, gr_y3, self.width, gr_y3, width=2)
-        # self.list.append(g4)
 
         x_left = 750
         border = 10
@@ -48,7 +38,7 @@ class Graph():
         for k in range(1, 11, 1):
             g5 = self.canvas.create_line((x_start + k * w_size/10, y_middle + 5), (x_start + k * w_size/10, y_middle - 5), width=3)
             self.list.append(g5)
-            g6 = self.canvas.create_text(x_start + k * w_size/10, y_middle + 20, text=str(k), font='Constantia 8')
+            g6 = self.canvas.create_text(x_start + k * w_size/10, y_middle + 20, text=str(round(self.t_max/10*k, 1)), font='Constantia 8')
             self.list.append(g6)
         for k in range(-5, 6 , 1):
             g7 = self.canvas.create_line((x_start - 5, y_middle - k * (height/2) / 6 ), (x_start + 5, y_middle - k * (height/2) / 6), width=3)

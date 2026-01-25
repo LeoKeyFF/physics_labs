@@ -68,7 +68,7 @@ def acc_sign_up(login, password, status):
     )
 
     if status == "student":
-        tasks = 3
+        tasks = 4
         for task in range(0, tasks):
             cursor.execute(
                 f"INSERT INTO RESULTS (TaskNumber, UserName) VALUES ('{task + 1}', '{login}')"
@@ -113,7 +113,7 @@ def get_stat():
     print(logins)
 
     for login in logins:
-        for task_number in range(1, 4):
+        for task_number in range(1, 5):
             ex1 = cursor.execute(
                 f"SELECT Exercise1 FROM RESULTS WHERE UserName = '{login}' AND TaskNumber = {task_number}"
             ).fetchall()[0][0]

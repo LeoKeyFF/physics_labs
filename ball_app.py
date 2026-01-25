@@ -11,6 +11,11 @@ from ballistics import Ballistics
 from graph import Graph
 
 
+def collision(x1, y1, w1, h1, x2, y2, w2, h2):
+    if x1 <= x2 + w2 and x1 + w1 >= x2 and y1 + h1 >= y2 and y1 <= y2 + h2:
+        return True
+
+
 class BallApp(tk.Toplevel):
     def __init__(self, task, ex1, ex2, login):
         super().__init__()
@@ -26,11 +31,12 @@ class BallApp(tk.Toplevel):
         self.meter = self.task.meter
         self.step = int((self.width - self.x0) / 9)
 
-        self.Vmax = task.Vmax
+        self.v_max = task.Vmax
+        self.t_max = Ballistics.calc_max_time(self.v_max, self.task.y0) + Ballistics.calc_max_time(self.v_max, self.task.y0) * 0.15
 
-        self.num_v0 = tk.IntVar()
-        self.num_alpha = tk.IntVar()
-        self.num_v0.set(self.task.velocity if self.task.velocity is not None else 20)
+        self.num_v0 = tk.DoubleVar()
+        self.num_alpha = tk.DoubleVar()
+        self.num_v0.set(self.task.velocity if self.task.velocity is not None else self.v_max)
         self.num_alpha.set(self.task.angle if self.task.angle is not None else 30)
 
         self.start = False
@@ -64,18 +70,18 @@ class BallApp(tk.Toplevel):
         self.canvas.grid(column=0, row=0, sticky=tk.NSEW, pady=5, padx=5, columnspan=10, rowspan = 10)
 
         self.res_frame = tk.Frame(self)
-        self.res_frame.grid(row=6, column=10, sticky=tk.N)
+        self.res_frame.grid(row=8, column=10, sticky=tk.N)
         self.res2 = None
         self.res1 = None
 
         self.ex1 = ex1
         self.ex2 = ex2
 
-        self.graph = Graph(self.canvas, self.width, self.v_y_list, self.Vmax)
+        self.graph = Graph(self.canvas, self.width, self.v_y_list, self.v_max, self.t_max)
 
         x0m, y0m = task.x0, task.y0
         x0p, y0p = self.meter2pixel(x0m, y0m)
-        self.ball = Ball(x0p, y0p, x0m, y0m, self.Vmax, self.canvas)
+        self.ball = Ball(x0p, y0p, x0m, y0m, self.v_max, self.canvas)
 
         x, y = self.set_aim_cords(x0p, y0p, self.task.angle)
         self.aim = Aim(x, y, self.canvas)
@@ -121,17 +127,17 @@ class BallApp(tk.Toplevel):
         self.lab4.grid(row=0, column=10, sticky=tk.SW)
 
         self.lab5 = tk.Label(self, wraplength=220, text=self.task.text, font='Constantia 12', justify="left")
-        self.lab5.grid(row=1, column=10, sticky=tk.NW, rowspan = 2)
+        self.lab5.grid(row=1, column=10, sticky=tk.NW, rowspan = 4)
 
         self.lab6 = tk.Label(self, text='Дано:', font=("Tahoma", 13, "bold"))
-        self.lab6.grid(row=3, column=10, sticky=tk.SW)
+        self.lab6.grid(row=5, column=10, sticky=tk.SW)
 
         aimx, aimy = self.pixel2meter(self.aim.x, self.aim.y)
         self.lab7 = tk.Label(self, text='Центр мишени:\n' + '(x=' + str(round(aimx)) + '; y=' + str(round(aimy))+ ')', font='Constantia 12')
-        self.lab7.grid(row=4, column=10, sticky=tk.NW)
+        self.lab7.grid(row=6, column=10, sticky=tk.NW)
 
         self.lab8 = tk.Label(self, text='Результат:', font=("Tahoma", 13, "bold"))
-        self.lab8.grid(row=5, column=10, sticky=tk.SW)
+        self.lab8.grid(row=7, column=10, sticky=tk.SW)
 
         self.result_draw()
 
@@ -152,6 +158,7 @@ class BallApp(tk.Toplevel):
             return
 
         ballx, bally = Ballistics.calc_cords(self.t, self.ball.V0, self.ball.alpha, self.ball.x0, self.ball.y0)
+        print(type(self.ball.V0))
 
         if bally < 0:
             bally = 0
@@ -167,7 +174,7 @@ class BallApp(tk.Toplevel):
 
         xp, yp = self.meter2pixel(ballx, bally)
 
-        if self.collision(xp, yp - self.ball.size, self.ball.size, self.ball.size, self.aim.x, self.aim.y-self.aim.height/2, self.aim.width, self.aim.height):
+        if collision(xp, yp - self.ball.size, self.ball.size, self.ball.size, self.aim.x, self.aim.y-self.aim.height/2, self.aim.width, self.aim.height):
             self.OK_im = ImageTk.PhotoImage(Image.open('images/OK.png'))
             self.OK = self.canvas.create_image(self.width/2, self.height/2, image=self.OK_im)
             self.start = False
@@ -187,7 +194,7 @@ class BallApp(tk.Toplevel):
 
         # draw velocity graph
         v_y = Ballistics.calc_velocity_y(v0=self.ball.V0, t=self.t, alpha=self.ball.alpha)
-        self.v_y_list.append(( 800 + self.t * (self.width - 750)/10, 200 - ( v_y / self.ball.Vmax * 125)))
+        self.v_y_list.append(( 800 + (self.t /self.t_max * (self.width - 750)), 200 - ( v_y / self.ball.Vmax * 125)))
 
         v_x = Ballistics.calc_velocity_x(v0=self.ball.V0, alpha=self.ball.alpha)
         self.v_x_list.append((800 + self.t * (self.width - 750)/10, 200 - ( v_x / self.ball.Vmax * 125)))
@@ -203,12 +210,6 @@ class BallApp(tk.Toplevel):
 
         self.t += 0.03
         self.after(30, lambda: self.action())
-
-
-    def collision(self, x1, y1, w1, h1, x2, y2, w2, h2):
-        if x1 <= x2 + w2 and x1 + w1 >= x2 and y1 + h1 >= y2 and y1 <= y2 + h2:
-            return True
-
 
     def draw_background(self):
 
@@ -250,8 +251,8 @@ class BallApp(tk.Toplevel):
     def key_press(self, event):
         if event.keysym == 'Return' and not self.start:
             try:
-                self.ball.V0 = int(self.num_v0.get())
-                self.ball.alpha = int(self.num_alpha.get())
+                self.ball.V0 = self.num_v0.get()
+                self.ball.alpha = self.num_alpha.get()
                 self.start = True
                 self.v_y_list.clear()
                 self.v_x_list.clear()
@@ -280,9 +281,11 @@ class BallApp(tk.Toplevel):
         else:
             y_max = Ballistics.calc_max_aim_y_angle_const(x1, self.ball.Vmax, self.ball.x0, self.ball.y0, angle)
 
+        print(y1, y_max)
         if y1 > y_max:
+
             return self.set_aim_cords(ball_x0p, ball_y0p, angle)
-        return self.meter2pixel(int(x1/5)*5, (int(y1/5)*5))
+        return self.meter2pixel(int(x1/5*5), (int(y1/5*5)))
 
     def mouse_move(self, event):
         if self.find_collision(event.x, event.y, *self.but_rec_graph_y):

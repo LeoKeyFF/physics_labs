@@ -8,12 +8,12 @@ class Ball:
         self.y = y0
         self.canvas = canvas
         self.body = None
-        self.alpha = 45
+        self.alpha = 45.0
         self.x0 = x0m
         self.y0 = y0m
         self.img = None
 
-        self.V0 = 20
+        self.V0 = Vmax
         self.Vmax = Vmax
         self.size = 20
 
