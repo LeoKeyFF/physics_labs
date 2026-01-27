@@ -11,8 +11,9 @@ from ballistics import Ballistics
 from graph import Graph
 
 
-def collision(x1, y1, w1, h1, x2, y2, w2, h2):
-    if x1 <= x2 + w2 and x1 + w1 >= x2 and y1 + h1 >= y2 and y1 <= y2 + h2:
+def collision(x1, y1, r , x2, y2, w2, h2):
+    # if x1 <= x2 + w2 and x1 + w1 >= x2 and y1 + h1 >= y2 and y1 <= y2 + h2:
+    if x1 - r <= x2 + w2 and x1 + r >= x2 and y1 + r >= y2 and y1 - r <= y2 + h2:
         return True
 
 
@@ -37,7 +38,7 @@ class BallApp(tk.Toplevel):
         self.num_v0 = tk.DoubleVar()
         self.num_alpha = tk.DoubleVar()
         self.num_v0.set(self.task.velocity if self.task.velocity is not None else self.v_max)
-        self.num_alpha.set(self.task.angle if self.task.angle is not None else 30)
+        self.num_alpha.set(self.task.angle if self.task.angle is not None else 30.0)
 
         self.start = False
         self.FALSE_im = None
@@ -127,7 +128,7 @@ class BallApp(tk.Toplevel):
         self.lab4.grid(row=0, column=10, sticky=tk.SW)
 
         self.lab5 = tk.Label(self, wraplength=220, text=self.task.text, font='Constantia 12', justify="left")
-        self.lab5.grid(row=1, column=10, sticky=tk.NW, rowspan = 4)
+        self.lab5.grid(row=1, column=10, sticky=tk.NW, rowspan = 5)
 
         self.lab6 = tk.Label(self, text='Дано:', font=("Tahoma", 13, "bold"))
         self.lab6.grid(row=5, column=10, sticky=tk.SW)
@@ -158,7 +159,7 @@ class BallApp(tk.Toplevel):
             return
 
         ballx, bally = Ballistics.calc_cords(self.t, self.ball.V0, self.ball.alpha, self.ball.x0, self.ball.y0)
-        print(type(self.ball.V0))
+
 
         if bally < 0:
             bally = 0
@@ -174,20 +175,27 @@ class BallApp(tk.Toplevel):
 
         xp, yp = self.meter2pixel(ballx, bally)
 
-        if collision(xp, yp - self.ball.size, self.ball.size, self.ball.size, self.aim.x, self.aim.y-self.aim.height/2, self.aim.width, self.aim.height):
+        if collision(xp, yp, self.ball.radius, self.aim.x, self.aim.y-self.aim.height/2, self.aim.width, self.aim.height):
             self.OK_im = ImageTk.PhotoImage(Image.open('images/OK.png'))
             self.OK = self.canvas.create_image(self.width/2, self.height/2, image=self.OK_im)
             self.start = False
 
-            database.add_result(task= self.task.number, exercise1 = True, exercise2 = False, login = self.login)
-            self.ex1 = "Правильно"
+            if math.dist((xp, yp), ( self.aim.x, self.aim.y)) <= self.ball.radius:
+                database.add_result(task=self.task.number, exercise1=True, exercise2=True, login=self.login)
+                self.ex1 = "Правильно"
+                self.ex2 = "Правильно"
+            else:
+                database.add_result(task= self.task.number, exercise1 = True, exercise2 = False, login = self.login)
+                self.ex1 = "Правильно"
+                self.ex2 = "Ошибка"
+
             self.result_draw()
 
         self.ball.move(xp, yp)
 
         # draw path
         if int (math.dist((xp, yp), (self.old_xp, self.old_yp,))) > 30:
-            oval = self.canvas.create_oval(xp+3, yp - 20+3, xp+ 7+3, yp - 20+3 + 7, fill = 'grey', outline = "grey")
+            oval = self.canvas.create_oval(xp - 3, yp - 3, xp + 3, yp  + 3, fill = 'grey', outline = "grey")
             self.oval_list.append(oval)
             self.old_xp = xp
             self.old_yp = yp

@@ -12,3 +12,4 @@ class Aim:
     def draw(self):
         self.img = ImageTk.PhotoImage(Image.open('images/aim.png'))
         self.canvas.create_image(self.x + self.width/2, self.y, image=self.img)
+

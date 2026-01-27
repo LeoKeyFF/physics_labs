@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 
 import database
 from ball_app import BallApp
+from gravity_task_window import GravityTaskWindow
 from scrollable_frame import ScrollableFrame
 from task_class import TaskBall, TaskGravity
 
@@ -21,7 +22,8 @@ def click(task, task_number, login):
         wind = BallApp(task, ex1, ex2, login)
         wind.grab_set()
     else:
-        subprocess.Popen([sys.executable, "Gravity.py"])
+        wind = GravityTaskWindow(task, ex1, ex2, login)
+        wind.grab_set()
 
 
 def create_task_block(parent_frame, block_title, tasks, login):
@@ -57,8 +59,6 @@ def create_task_block(parent_frame, block_title, tasks, login):
             width=65,
             justify="center"
         ).pack(anchor="w", padx=10, pady=(5, 0)))
-
-
 
         tk.Button(
             task_frame,
@@ -186,8 +186,8 @@ class MainApp(tk.Tk):
         self.tasks_ball= [
             TaskBall(
                 number = 1,
-                name="Задание 1: Бросок мяча",
-                text="Баскетболист бросает мяч в щит кольца под углом в 50 градусов (от горизонта). "
+                name="Задание 1: Баскетболист и мяч",
+                text="Баскетболист бросает мяч в щит кольца под углом 50 градусов (от горизонта). "
                      "С какой скоростью (м/с) нужно бросить мяч, чтобы попасть в центр щита и забить гол?",
                 velocity=None,
                 angle=50.0,
@@ -199,7 +199,7 @@ class MainApp(tk.Tk):
             TaskBall(
                 number=2,
                 name="Задание 2: Пушка и снаряд",
-                text="Пушка выпускает снаряд с начальной скоростью 300 с холма высотой 2000 по мишени."
+                text="Пушка выпускает снаряд с начальной скоростью 300 м/с с холма высотой 2 км по мишени."
                      "При каком угле наклона орудия снаряд попадёт в цель?",
                 velocity=300.0,
                 angle=None,
@@ -210,14 +210,16 @@ class MainApp(tk.Tk):
             ),
             TaskBall(
                 number=3,
-                name="Задание 3: Бросок мяча",
-                text="Текст номер 3",
-                velocity=None,
-                angle=33.0,
-                x0=30,
-                y0=50,
-                Vmax=100,
-                meter=1
+                name="Задание 3: Скалолаз и карабин",
+                text="Скалолаз на склоне должен метнуть карабин с верёвкой своему "
+                     "напарнику. Карабин бросают рукой со скоростью 22 м/с. "
+                     "Под каким углом к горизонту надо его бросить, чтобы он точно достиг цели? ",
+                velocity=22.0,
+                angle=None,
+                x0=10,
+                y0=20,
+                Vmax=22.0,
+                meter=10
             ),
         ]
 
@@ -225,7 +227,9 @@ class MainApp(tk.Tk):
             TaskGravity(
                 number = 4,
                 name="Задание 4: Солнце и Юпитер",
-                text="Очень крутой текст задачи",
+                text="Скалолаз на склоне должен метнуть карабин с верёвкой своему "
+                     "напарнику. Карабин бросают рукой со скоростью 22 м/с. "
+                     "Под каким углом к горизонту надо его бросить, чтобы он точно достиг цели? ",
                 velocity=30000
             )
         ]
@@ -258,7 +262,7 @@ class MainApp(tk.Tk):
 
         self.login_entry = tk.Entry(
             form_frame,
-            font=("Arial", 12),
+            font=("Tahoma", 12),
             width=25
         )
         self.login_entry.grid(row=0, column=1, pady=10, padx=10)
@@ -267,13 +271,13 @@ class MainApp(tk.Tk):
         tk.Label(
             form_frame,
             text="Пароль:",
-            font=("Arial", 12),
+            font=("Tahoma", 12),
             bg="#f0f0f0"
         ).grid(row=1, column=0, sticky="w", pady=10, padx=10)
 
         self.password_entry = tk.Entry(
             form_frame,
-            font=("Arial", 12),
+            font=("Tahoma", 12),
             width=25,
             show="*"
         )
@@ -347,14 +351,6 @@ class MainApp(tk.Tk):
             width=25
         )
         self.reg_login_entry.grid(row=0, column=1, pady=10, padx=10)
-
-        # Статус: учитель/ученик (Combobox)
-        tk.Label(
-            self.main_frame,
-            text="Статус:",
-            font=("Tahoma", 12),
-            bg="#f0f0f0"
-        ).pack(anchor="w", padx=40, pady=(10, 5))
 
         self.status_combo = ttk.Combobox(
             self.main_frame,
@@ -487,7 +483,6 @@ class MainApp(tk.Tk):
             if status == "student":
                 self.show_student_window()
             else:
-                print(status)
                 self.show_teacher_window()
             messagebox.showinfo("Успех", "Вход выполнен успешно!")
 
@@ -510,7 +505,7 @@ class MainApp(tk.Tk):
 
         create_task_block(scroll_frame.scrollable_frame, "Баллистические задачи", self.tasks_ball, self.current_user)
 
-        create_task_block(scroll_frame.scrollable_frame, "Закон Всемирного тяготения", self.tasks_gravity, self.current_user)
+        create_task_block(scroll_frame.scrollable_frame, "Закон всемирного тяготения", self.tasks_gravity, self.current_user)
 
     def show_teacher_window(self):
         self.clear_main_frame()

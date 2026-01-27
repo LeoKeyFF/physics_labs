@@ -110,7 +110,6 @@ def get_stat():
         for l in logins_:
             if l[0] not in logins:
                 logins.append(l[0])
-    print(logins)
 
     for login in logins:
         for task_number in range(1, 5):

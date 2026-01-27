@@ -17,12 +17,14 @@ class Ball:
         self.Vmax = Vmax
         self.size = 20
 
+        self.radius = self.size/2
+
     def draw(self):
         if self.body:
             self.canvas.delete(self.body)
         x, y = self.x, self.y
         self.img = ImageTk.PhotoImage(Image.open('images/желез_шар20x20.png'))
-        self.body = self.canvas.create_image(x + 10, y - 10, image=self.img)
+        self.body = self.canvas.create_image(x, y, image=self.img)
 
 
     def move(self, x, y):
