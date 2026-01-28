@@ -8,8 +8,6 @@ from gravity_task_window import GravityTaskWindow
 from scrollable_frame import ScrollableFrame
 from task_class import TaskBall, TaskGravity
 
-import sys
-import subprocess
 
 
 def click(task, task_number, login):
@@ -177,6 +175,7 @@ class MainApp(tk.Tk):
 
         self.title("Главная")
         self.geometry(f'{800}x{600}')
+        self.resizable(False, False)
 
         self.main_frame = tk.Frame(self)
         self.main_frame.pack(fill="both", expand=True)
@@ -226,11 +225,10 @@ class MainApp(tk.Tk):
         self.tasks_gravity= [
             TaskGravity(
                 number = 4,
-                name="Задание 4: Солнце и Юпитер",
-                text="Скалолаз на склоне должен метнуть карабин с верёвкой своему "
-                     "напарнику. Карабин бросают рукой со скоростью 22 м/с. "
-                     "Под каким углом к горизонту надо его бросить, чтобы он точно достиг цели? ",
-                velocity=30000
+                name="Задание 4: Планета и спутник",
+                text1="Вокруг планеты массой ",
+                text2= " кг на орбите радиуса (считая от центра объекта) ",
+                text3= " м крутится спутник, рассчитайте с каким периодом (с) будет совершаться полный оборот."
             )
         ]
 
@@ -556,7 +554,7 @@ class MainApp(tk.Tk):
         tk.Label(
             user_info_frame,
             text=user,
-            font=("Arial", 14, "bold"),
+            font=("Tahoma", 14, "bold"),
             bg="#2c3e50",
             fg="white"
         ).pack(side="left", padx=(0, 10))

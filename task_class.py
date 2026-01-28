@@ -13,10 +13,14 @@ class TaskBall:
         self.meter = meter
 
 class TaskGravity:
-    def __init__(self, number,  name, text, velocity):
+    def __init__(self, number,  name, text1, text2, text3):
         super().__init__()
 
         self.number = number
         self.name = name
-        self.text = text
-        self.velocity = velocity
+        self.velocity = None
+        self.radius = None
+        self.mass_big = None
+        self.text1 = text1
+        self.text2 = text2
+        self.text3 = text3

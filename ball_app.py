@@ -21,6 +21,9 @@ class BallApp(tk.Toplevel):
     def __init__(self, task, ex1, ex2, login):
         super().__init__()
         # --------- Design frames----------------------------------------------
+        self.img_vx = ImageTk.PhotoImage(Image.open('images/icon_vx.png'))
+        self.img_vy = ImageTk.PhotoImage(Image.open('images/icon_vy.png'))
+        self.img_cross = ImageTk.PhotoImage(Image.open('images/icon_cross.png'))
         self.task = task
         self.login = login
         self.title("Бросание тела")
@@ -57,10 +60,10 @@ class BallApp(tk.Toplevel):
 
         self.button_graph_y = None
         self.in_but_graph_y = False
-        self.but_rec_graph_y = [960, 360, 1000, 400]
+        self.but_rec_graph_y = [950, 360, 1000, 410]
         self.button_graph_x = None
         self.in_but_graph_x = False
-        self.but_rec_graph_x = [960, 400, 1000, 440]
+        self.but_rec_graph_x = [950, 415, 1000, 465]
         self.button_graph_close = None
         self.in_but_graph_close = False
         self.but_rec_graph_close = [710, 50, 750, 90]
@@ -205,7 +208,7 @@ class BallApp(tk.Toplevel):
         self.v_y_list.append(( 800 + (self.t /self.t_max * (self.width - 750)), 200 - ( v_y / self.ball.Vmax * 125)))
 
         v_x = Ballistics.calc_velocity_x(v0=self.ball.V0, alpha=self.ball.alpha)
-        self.v_x_list.append((800 + self.t * (self.width - 750)/10, 200 - ( v_x / self.ball.Vmax * 125)))
+        self.v_x_list.append((800 + (self.t /self.t_max * (self.width - 750)), 200 - ( v_x / self.ball.Vmax * 125)))
 
         self.graph.delete_line()
         if len(self.v_y_list) > 1:
@@ -233,8 +236,21 @@ class BallApp(tk.Toplevel):
         self.canvas.create_text(self.x0 - 40, 30, text='y(м)', font='Constantia 20')
         self.canvas.create_text(self.width - 30, self.y0 + 40, text='x(м)', font='Constantia 20')
 
-        self.button_graph_y = self.canvas.create_rectangle(self.but_rec_graph_y)
-        self.button_graph_x = self.canvas.create_rectangle(self.but_rec_graph_x)
+        self.button_graph_y = self.canvas.create_rectangle(self.but_rec_graph_y, fill="white")
+        self.button_graph_x = self.canvas.create_rectangle(self.but_rec_graph_x, fill="white")
+
+        self.canvas.create_image(
+            self.but_rec_graph_y[0] + (self.but_rec_graph_y[2] - self.but_rec_graph_y[0]) / 2,
+            self.but_rec_graph_y[1] + (self.but_rec_graph_y[3] - self.but_rec_graph_y[1]) / 2,
+            image=self.img_vy
+        )
+        self.canvas.create_image(
+            self.but_rec_graph_x[0] + (self.but_rec_graph_x[2] - self.but_rec_graph_x[0]) / 2,
+            self.but_rec_graph_x[1] + (self.but_rec_graph_x[3] - self.but_rec_graph_x[1]) / 2,
+            image=self.img_vx
+        )
+
+
 
     def draw_cords_axes(self):
         self.canvas.create_line(0, self.y0, self.width, self.y0, width=4)
@@ -289,7 +305,6 @@ class BallApp(tk.Toplevel):
         else:
             y_max = Ballistics.calc_max_aim_y_angle_const(x1, self.ball.Vmax, self.ball.x0, self.ball.y0, angle)
 
-        print(y1, y_max)
         if y1 > y_max:
 
             return self.set_aim_cords(ball_x0p, ball_y0p, angle)
@@ -319,7 +334,12 @@ class BallApp(tk.Toplevel):
             self.graph.show = True
             self.graph.draw()
             self.canvas.delete(self.button_graph_close)
-            self.button_graph_close = self.canvas.create_rectangle(self.but_rec_graph_close)
+            # but_rec_graph_close
+            self.button_graph_close = self.canvas.create_image(
+                self.but_rec_graph_close[0] + (self.but_rec_graph_close[2] - self.but_rec_graph_close[0]) / 2,
+                self.but_rec_graph_close[1] + (self.but_rec_graph_close[3] - self.but_rec_graph_close[1]) / 2,
+                image=self.img_cross
+            )
             if self.OK:
                 self.canvas.lift(self.OK)
             if self.FALSE:
@@ -332,7 +352,11 @@ class BallApp(tk.Toplevel):
             self.graph.show = True
             self.graph.draw()
             self.canvas.delete(self.button_graph_close)
-            self.button_graph_close = self.canvas.create_rectangle(self.but_rec_graph_close)
+            self.button_graph_close = self.canvas.create_image(
+                self.but_rec_graph_close[0] + (self.but_rec_graph_close[2] - self.but_rec_graph_close[0]) / 2,
+                self.but_rec_graph_close[1] + (self.but_rec_graph_close[3] - self.but_rec_graph_close[1]) / 2,
+                image=self.img_cross
+            )
             if self.OK:
                 self.canvas.lift(self.OK)
             if self.FALSE:
