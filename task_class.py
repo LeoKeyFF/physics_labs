@@ -21,6 +21,7 @@ class TaskGravity:
         self.velocity = None
         self.radius = None
         self.mass_big = None
+        self.period = None
         self.text1 = text1
         self.text2 = text2
         self.text3 = text3

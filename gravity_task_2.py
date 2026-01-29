@@ -1,10 +1,11 @@
+import json
+
 import pygame
 import math
 import random
 
-# from grvt01 import velocity
 
-MassBig1 = 1e32 # Это вводят!!!!!!!!! формула правильного MassBig1 это [4*pi**2*Radius**3/(G*T**2)]
+# MassBig1 = 1e32 # Это вводят!!!!!!!!! формула правильного MassBig1 это [4*pi**2*Radius**3/(G*T**2)]
 
 res = 0 # Переменная res - показывает результат, она используется в самом низу и перед классом тел для демонстрации результата юзеру
 
@@ -45,16 +46,29 @@ show_overlay_image = False
 
 
 # =============================#
-T = random.uniform(2.8e8*pi, 2.2e9*pi)
-Radius = random.uniform(1.1e12, 4.4e12)
+filename = 'data_to_gravity_sim.json'
+with open(filename, 'r') as file:
+    loaded_data = json.load(file)
+
+T = float(loaded_data["period"])
+Radius = loaded_data["radius"]
 MassSmall = 1.024e26
-velocity = 2*pi*Radius/T
+velocity = loaded_data["velocity"]
+MassBig1 = float(loaded_data["mass_big"])
 
 MassBig = 4*pi**2*Radius**3/(G*T**2)
+print(MassBig)
 
 Radius1 = Radius
 MassSmall1 = MassSmall
 velocity1 = velocity #*math.sqrt(MassBig1/MassBig)
+
+if abs(MassBig1 - MassBig) < MassBig * 0.01:
+    res = 2
+elif abs(MassBig1 - MassBig) < MassBig * 0.05:
+    res = 1
+else:
+    res = 0
 # =============================#
 
 

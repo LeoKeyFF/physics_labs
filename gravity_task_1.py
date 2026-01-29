@@ -51,7 +51,6 @@ with open(filename, 'r') as file:
     loaded_data = json.load(file)
 
 T1 = float(loaded_data["period"])
-print(float(loaded_data["period"]))
 Radius = loaded_data["radius"]
 MassSmall = 1.024e26
 velocity = loaded_data["velocity"]

@@ -17,11 +17,17 @@ class GravityTaskWindow(tk.Tk):
     def __init__(self, task, ex1, ex2, login):
         super().__init__()
         self.task = task
-        self.task.radius = random.uniform(1.1, 4.4)
-        self.task.radius = round(self.task.radius, 3) * 1e12
-
-        self.task.velocity =  round(random.uniform(4000, 8000), 0)
-        self.task.mass_big = (self.task.velocity ** 2 * self.task.radius) / G
+        if self.task.number == 4:
+            self.task.radius = random.uniform(1.1, 4.4)
+            self.task.radius = round(self.task.radius, 3) * 1e12
+            self.task.velocity =  round(random.uniform(4000, 8000), 0)
+            self.task.mass_big = (self.task.velocity ** 2 * self.task.radius) / G
+        else:
+            self.task.period = random.uniform(2.8 * math. pi, 22.0 * math. pi)
+            self.task.period = round(self.task.period, 3) * 1e8
+            self.task.radius = random.uniform(1.1, 4.4)
+            self.task.radius = round(self.task.radius, 3) * 1e12
+            self.task.velocity = 2 * math. pi * self.task.radius / self.task.period
 
         self.title("Закон всемирного тяготения")
         self.geometry(f'{800}x{600}')
@@ -48,7 +54,8 @@ class GravityTaskWindow(tk.Tk):
 
         self.main_frame_2.grid_columnconfigure(0, weight=1)
 
-        self.period = tk.DoubleVar()
+        self.period_var = tk.DoubleVar()
+        self.mass_big_var = tk.DoubleVar()
 
         self.ex1 = ex1
         self.ex2 = ex2
@@ -60,12 +67,20 @@ class GravityTaskWindow(tk.Tk):
             font=("Tahoma", 16, "bold"),
         ).grid(row=0, column=0, sticky="nw", pady=10, padx=10)
 
-        tk.Label(
-            self.right_frame,
-            text=self.task.text1 + str(self.task.mass_big) + self.task.text2 + str(self.task.radius) + self.task.text3,
-            font=("Tahoma", 13),
-            wraplength=360
-        ).grid(row=1, column=0, sticky="nw", pady=10, padx=10, rowspan = 3)
+        if self.task.number == 4:
+            tk.Label(
+                self.right_frame,
+                text=self.task.text1 + str(self.task.mass_big) + self.task.text2 + str(self.task.radius) + self.task.text3,
+                font=("Tahoma", 13),
+                wraplength=360
+            ).grid(row=1, column=0, sticky="nw", pady=10, padx=10, rowspan = 3)
+        else:
+            tk.Label(
+                self.right_frame,
+                text=self.task.text1 + str(self.task.radius) + self.task.text2 + str(self.task.period) + self.task.text3,
+                font=("Tahoma", 13),
+                wraplength=360
+            ).grid(row=1, column=0, sticky="nw", pady=10, padx=10, rowspan = 3)
 
         self.res_frame = tk.Frame(self.right_frame)
         self.res_frame.grid(row=5, column=0, sticky="ns")
@@ -73,20 +88,36 @@ class GravityTaskWindow(tk.Tk):
         self.draw_result()
 
         #right
-        tk.Label(
-            self.left_frame,
-            text="Период:",
-            font=("Tahoma", 13),
-            bg="#f0f0f0"
-        ).grid(row=0, column=0, sticky="w", pady=10, padx=10)
+        if self.task.number == 4:
+            tk.Label(
+                self.left_frame,
+                text="Период:",
+                font=("Tahoma", 13),
+                bg="#f0f0f0"
+            ).grid(row=0, column=0, sticky="w", pady=10, padx=10)
 
-        self.period = tk.Entry(
-            self.left_frame,
-            textvariable = self.period,
-            font=("Tahoma", 13),
-            width=25
-        )
-        self.period.grid(row=0, column=1, pady=10, padx=10)
+            self.period_var = tk.Entry(
+                self.left_frame,
+                textvariable = self.period_var,
+                font=("Tahoma", 13),
+                width=25
+            )
+            self.period_var.grid(row=0, column=1, pady=10, padx=10)
+        else:
+            tk.Label(
+                self.left_frame,
+                text="Масса:",
+                font=("Tahoma", 13),
+                bg="#f0f0f0"
+            ).grid(row=0, column=0, sticky="w", pady=10, padx=10)
+
+            self.mass_big_var = tk.Entry(
+                self.left_frame,
+                textvariable=self.mass_big_var,
+                font=("Tahoma", 13),
+                width=25
+            )
+            self.mass_big_var.grid(row=0, column=1, pady=10, padx=10)
 
 
         #start button
@@ -126,7 +157,10 @@ class GravityTaskWindow(tk.Tk):
         ).grid(row=2, column=0, sticky= "nw")
 
     def current_entry_value(self, ex1, ex2, login):
-        cur_val = self.period.get()
+        if self.task.number == 4:
+            cur_val = self.period_var.get()
+        else:
+            cur_val = self.mass_big_var.get()
         if len(cur_val) == 0:
             messagebox.showerror("Ошибка", "Заполните значение!")
             return
@@ -136,34 +170,40 @@ class GravityTaskWindow(tk.Tk):
 
         # Проверка------------------------4
         if self.task.number == 4:
-            t = 2 * math.pi * math.sqrt(self.task.radius ** 3 / (G * self.task.mass_big))
-            if abs(t - float(cur_val)) < t * 0.01:
-                database.add_result(task=self.task.number, exercise1=True, exercise2=True, login=login)
-                self.ex1 = "Правильно"
-                self.ex2 = "Правильно"
-                self.draw_result()
+            right = 2 * math.pi * math.sqrt(self.task.radius ** 3 / (G * self.task.mass_big))
+        else:
+            right = 4*math.pi**2*self.task.radius**3/(G*self.task.period**2)
 
-            elif abs(t - float(cur_val)) < t * 0.05:
-                database.add_result(task=self.task.number, exercise1=True, exercise2=False, login=login)
-                self.ex1 = "Правильно"
+        if abs(right - float(cur_val)) < right * 0.01:
+            database.add_result(task=self.task.number, exercise1=True, exercise2=True, login=login)
+            self.ex1 = "Правильно"
+            self.ex2 = "Правильно"
+            self.draw_result()
+
+        elif abs(right - float(cur_val)) < right * 0.05:
+            database.add_result(task=self.task.number, exercise1=True, exercise2=False, login=login)
+            self.ex1 = "Правильно"
+            self.ex2 = "Ошибка"
+            self.draw_result()
+
+        else:
+            if self.ex1 == "Не приступал(а)":
+                database.add_result(task=self.task.number, exercise1=False, exercise2=False, login=login)
+                self.ex1 = "Ошибка"
                 self.ex2 = "Ошибка"
                 self.draw_result()
-
-            else:
-                if self.ex1 == "Не приступал(а)":
-                    database.add_result(task=self.task.number, exercise1=False, exercise2=False, login=login)
-                    self.ex1 = "Ошибка"
-                    self.ex2 = "Ошибка"
-                    self.draw_result()
-        click(self.task, cur_val, ex1, ex2, login)
+        if self.task.number == 4:
+            click(self.task, self.task.mass_big, cur_val)
+        else:
+            click(self.task, cur_val, self.task.period)
 
 
 
-def click(task, period, ex1, ex2, login):
+def click(task, mass, period):
     # ----- json file: ------------------------------------
     data_to_save = {
         "period": period,
-        "mass_big": task.mass_big,
+        "mass_big": mass,
         "radius": task.radius,
         "velocity": task.velocity
     }
