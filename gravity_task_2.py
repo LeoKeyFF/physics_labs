@@ -1,20 +1,20 @@
-import json
-
 import pygame
 import math
 import random
 
-#T1 = 3e9  # Это вводят!!!!!!!!! формула правильного T1 это [2*pi*math.sqrt((Radius)**3/(G*MassBig))]
+# from grvt01 import velocity
+
+MassBig1 = 1e32 # Это вводят!!!!!!!!! формула правильного MassBig1 это [4*pi**2*Radius**3/(G*T**2)]
 
 res = 0 # Переменная res - показывает результат, она используется в самом низу и перед классом тел для демонстрации результата юзеру
 
-# Используем: скорость(velocity) от 5000 до 8000
+# Используем: период(T) от 2.8e8*pi до 2.2e9*pi
 #             радиус(Radius) от 1.1e12 до 4.4e12
-#             Рассчитываем массу большого тела(MassBig) по формуле MassBig=(velocity^2*Radius)/G
-# В условие пишем: Вокруг тела массой MassBig на орбите радиуса(считая от центра объекта) Radius крутится спутник, рассчитайте с каким периодом будет совершаться полный оборот. (Введён будет T1)
+#             Рассчитываем массу большого тела(MassBig) по формуле MassBig=4*pi**2*Radius**3/(G*T**2)
+# В условие пишем: Спутник на орбите радиуса Radius делает полный оборот за период T. Найти массу MassBig1 тела вокруг которого летает спутник
 # Чуть ниже будет всё связанное со всеми опрерируемыми значениями
 #
-# Красное тело в классе Body1 это тело которое симулируется исходя из введённого периода, чем больше период, тем меньше скорость, ни на что визуально кроме скорости обращения введёный период не влияет
+# Красное тело в классе Body1 это тело которое симулируется исходя из введённого значения массы
 # Синее тело в классе Body это тело которое должно получится
 #
 # Проверку можно прикрутить самому, я предлагаю на полный бал - погрешность меньше 0.5%, неполный бал - погрешность не больше 3-5%
@@ -25,7 +25,7 @@ telo_size = 25
 
 win = pygame.display.set_mode((WIDTH, HEIGHT))
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Gravity task №1")
+pygame.display.set_caption("Gravity task №2")
 clock = pygame.time.Clock()
 
 G = 6.67430e-11  # Vonyuchaya constanta
@@ -43,39 +43,20 @@ zoomed = False
 
 show_overlay_image = False
 
-# overlay_image = pygame.transform.scale(pygame.image.load('images/busya.png'), (200, 200))
 
 # =============================#
-filename = 'data_to_gravity_sim.json'
-with open(filename, 'r') as file:
-    loaded_data = json.load(file)
-
-T1 = float(loaded_data["period"])
-print(float(loaded_data["period"]))
-Radius = loaded_data["radius"]
+T = random.uniform(2.8e8*pi, 2.2e9*pi)
+Radius = random.uniform(1.1e12, 4.4e12)
 MassSmall = 1.024e26
-velocity = loaded_data["velocity"]
-MassBig = loaded_data["mass_big"]
+velocity = 2*pi*Radius/T
 
-T = 2 * pi * math.sqrt((Radius) ** 3 / (G * MassBig))
-print(T)
+MassBig = 4*pi**2*Radius**3/(G*T**2)
 
 Radius1 = Radius
 MassSmall1 = MassSmall
-velocity1 = velocity * T / T1
-MassBig1 = (velocity1) ** 2 * Radius1 / G
-
-if abs(T -T1) < T * 0.01:
-    res = 2
-elif abs(T -T1) < T * 0.05:
-    res = 1
-else:
-    res = 0
-
+velocity1 = velocity #*math.sqrt(MassBig1/MassBig)
 # =============================#
 
-# x_pos = (WIDTH - overlay_image.get_width()) // 2
-# y_pos = (HEIGHT - overlay_image.get_height()) // 2
 
 def showres():
     if res == 0:
@@ -194,14 +175,9 @@ while running:
             for body in bodies:
                 body.trail = []
 
-        # ДОБАВЛЕНО: Обработка нажатия клавиши для показа изображения
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_w:  # Нажатие клавиши I
-                show_overlay_image = True  # Показать изображение
-            # Если нужно добавить скрытие по другой клавише:
-            # elif event.key == pygame.K_o:  # Нажатие клавиши O
-            #     show_overlay_image = False  # Скрыть изображение
-
+            if event.key == pygame.K_w:
+                show_overlay_image = True
     win.blit(BG, (0, 0))
     win.blit(telo, (369, 276))
 
